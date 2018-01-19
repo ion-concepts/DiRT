@@ -1,0 +1,65 @@
+//-------------------------------------------------------------------------------
+//-- File:    ram_dual_port_2clk.sv
+//--
+//-- Author:  Ian Buckley
+//--
+//-- Parameterizable:
+//-- * Width of datapath.
+//-- * Size (Depth) of RAM
+//--
+//-- Description:
+//-- Infer dual port, two clock synchronous SRAM.
+//--
+//--
+//-------------------------------------------------------------------------------
+`include "global_defs.svh"
+
+module ram_dual_port_2clk
+  #(
+    parameter WIDTH=32,
+    parameter SIZE=9 // Xilinx BRAM is 512x36
+    ) 
+    (
+     input logic 	     clk1,
+     input logic 	     enable1,
+     input logic 	     write1,
+     input logic [SIZE-1:0] addr1,
+     input logic [WIDTH-1:0] data_in1,
+     output reg [WIDTH-1:0]  data_out1,
+     
+     input logic 	     clk2,
+     input logic 	     enable2,
+     input logic 	     write2,
+     input logic [SIZE-1:0] addr2,
+     input logic [WIDTH-1:0] data_in2,
+     output reg [WIDTH-1:0]  data_out2
+     );
+   
+   localparam RAMSIZE = 1 << SIZE;
+   
+   reg [WIDTH-1:0] 	     ram [RAMSIZE-1:0];
+
+   //
+   // Port1
+   //
+   always @(posedge clk1) begin
+      if (enable1)
+        begin
+           if (write1)
+             ram[addr1] <= data_in1;
+           data_out1 <= ram[addr1];
+        end
+   end
+
+   //
+   // Port2
+   //
+   always @(posedge clk2) begin
+      if (enable2)
+        begin
+           if (write2)
+             ram[addr2] <= data_in2;
+           data_out2 <= ram[addr2];
+        end
+   end
+endmodule // ram_dual_port_2clk
