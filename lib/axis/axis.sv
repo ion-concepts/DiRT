@@ -1,10 +1,12 @@
 //-----------------------------------------------------------------------------
 // File:    axis.sv
 //
-// Author:  Ian Buckley
+// Author:  Ian Buckley, Ion Concepts LLC.
 //
 // Description:
 // Support tasks to assist simulations of AXI4 streaming interfaces
+//
+// License: CERN-OHL-P (See LICENSE.md)
 //
 //-----------------------------------------------------------------------------
 

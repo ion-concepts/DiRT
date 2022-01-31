@@ -1,6 +1,14 @@
+//-------------------------------------------------------------------------------
+// File:   global_defs.v
+//
+// Author:  Ian Buckley, Ion Concepts LLC
 //
 // Global Definitions for the DiRT library.
 //
+//  License: CERN-OHL-P (See LICENSE.md)
+//
+//-------------------------------------------------------------------------------//
+
 `timescale 1ns/1ps
 
 // Booleans

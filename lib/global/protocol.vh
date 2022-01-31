@@ -1,12 +1,13 @@
 //-------------------------------------------------------------------------------
 // File:    protocol.vh
 //
-// Author:  Ian Buckley
+// Author:  Ian Buckley, Ion Concepts LLC
 //
 // Description:
 // Library of simple precompiler macro's for legacy Verilog code that can not use System Verilog equivalents
 // Facilitates packet aware manipulation of axis buses.
 //
+// License: CERN-OHL-P (See LICENSE.md)
 //
 //-----------------------------------------------------------------------------
 

@@ -1,31 +1,33 @@
 //-------------------------------------------------------------------------------
-//-- File:    axis_mm_to_pkt.sv
-//--
-//-- Author:  Ian Buckley
-//--
-//-- Parameterizable:
-//-- * Depth of buffer FIFO
-//--
-//-- Description:
-//-- This module takes a series of MM bus writes and constructs a buffered packet from them.
-//-- Packets have a 64bit quanta, but the AXI CSR interface as implemented here is 32Bit.
-//-- Three register targets for writes are provided in the address map:
-//-- UPPER  - Corresponds to [63:32] of packet word.
-//-- LOWER_NORM  - Corresponds to [31:0] of packet word. Write triggers bus beat.
-//-- LOWER_LAST  - Corresponds to [31:0] of packet word. Write triggers bus beat with tlast set.
-//--
-//-- In addition a read only status register is provided:
-//-- STATUS  - Reads local FIFO space available to accomodate new bus beats.  
-//--
-//-- This is a simple block, it allows system level internal controllability, for example allowing
-//-- users to create malformed packets as part of the verification process
-//-- Writes to either of the registers named LOWER triggers actions; A write to LOWER_NORM causes an output
-//-- bus beat to be formed, a write to LOWER_LAST causes an output bus beat to be formed with TLAST asserted.
-//--
-//-- Packets will not egress the block until a beat with TLAST has been formed defining the end of a packet,
-//-- and interemdiate bus beats will accumulate in the local FIFO space. Local FIFO space availablilty can 
-//-- be read at any time via the STATUS register.
-//--
+// File:    axis_mm_to_pkt.sv
+//
+// Author:  Ian Buckley, Ion Concepts LLC
+//
+// Parameterizable:
+// * Depth of buffer FIFO
+//
+// Description:
+// This module takes a series of MM bus writes and constructs a buffered packet from them.
+// Packets have a 64bit quanta, but the AXI CSR interface as implemented here is 32Bit.
+// Three register targets for writes are provided in the address map:
+// UPPER  - Corresponds to [63:32] of packet word.
+// LOWER_NORM  - Corresponds to [31:0] of packet word. Write triggers bus beat.
+// LOWER_LAST  - Corresponds to [31:0] of packet word. Write triggers bus beat with tlast set.
+//
+// In addition a read only status register is provided:
+// STATUS  - Reads local FIFO space available to accomodate new bus beats.  
+//
+// This is a simple block, it allows system level internal controllability, for example allowing
+// users to create malformed packets as part of the verification process
+// Writes to either of the registers named LOWER triggers actions; A write to LOWER_NORM causes an output
+// bus beat to be formed, a write to LOWER_LAST causes an output bus beat to be formed with TLAST asserted.
+//
+// Packets will not egress the block until a beat with TLAST has been formed defining the end of a packet,
+// and interemdiate bus beats will accumulate in the local FIFO space. Local FIFO space availablilty can 
+// be read at any time via the STATUS register.
+//
+// License: CERN-OHL-P (See LICENSE.md)
+//
 //-------------------------------------------------------------------------------
 `include "global_defs.svh"
 

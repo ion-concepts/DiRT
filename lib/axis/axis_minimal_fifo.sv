@@ -1,15 +1,17 @@
 //------------------------------------------------------------------------------
-//-- File:    axis_minimal_fifo.sv
-//--
-//-- Author:  Ian Buckley
-//--
-//-- Parameterizable:
-//-- * Width of datapath.
-//--
-//-- Description:
-//-- AXI Stream interface ultra fast critical path FIFO.
-//-- Only 2 entrys but no combinatorial feed through paths.
-//--
+// File:    axis_minimal_fifo.sv
+//
+// Author:  Ian Buckley, Ion Concepts LLC
+//
+// Parameterizable:
+// * Width of datapath.
+//
+// Description:
+// AXI Stream interface ultra fast critical path FIFO.
+// Only 2 entrys but no combinatorial feed through paths.
+//
+// License: CERN-OHL-P (See LICENSE.md)
+//
 //-------------------------------------------------------------------------------
 `include "global_defs.svh"
 

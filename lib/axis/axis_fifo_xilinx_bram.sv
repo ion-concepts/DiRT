@@ -1,17 +1,16 @@
 //-------------------------------------------------------------------------------
-//-- File:    axis_fifo_xilinx_bram.sv
-//--
-//-- Author:  Ian Buckley
-//--
-//-- Parameterizable:
-//-- * Width of datapath.
-//-- * Size (Depth) of FIFO
-//--
-//-- Description:
-//-- 
-//--
-//--
-//--
+// File:    axis_fifo_xilinx_bram.sv
+//
+// Author:  Ian Buckley, Ion Concepts LLC
+//
+// Parameterizable:
+// * Width of datapath.
+// * Size (Depth) of FIFO
+//
+// Description:
+// 
+//  License: CERN-OHL-P (See LICENSE.md)
+//
 //-------------------------------------------------------------------------------
 `include "global_defs.svh"
 

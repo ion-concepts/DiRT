@@ -1,16 +1,18 @@
 //-------------------------------------------------------------------------------
-//-- File:    axis_fifo_xilinx_srl32.sv
-//--
-//-- Author:  Ian Buckley
-//--
-//-- Parameterizable:
-//-- * Width of datapath.
-//--
-//-- Description:
-//-- This module uses the SRLC32E primitive explicitly and thus the oldest Xilinx device
-//-- support is VIRTEX-6/SPARTAN-6
-//-- SIZE is fixed at 5
-//--
+// File:    axis_fifo_xilinx_srl32.sv
+//
+// Author:  Ian Buckley, Ion Concepts LLC
+//
+// Parameterizable:
+// * Width of datapath.
+//
+// Description:
+// This module uses the SRLC32E primitive explicitly and thus the oldest Xilinx device
+// support is VIRTEX-6/SPARTAN-6
+// SIZE is fixed at 5
+//
+// License: CERN-OHL-P (See LICENSE.md)
+//
 //-------------------------------------------------------------------------------
 `include "global_defs.svh"
 

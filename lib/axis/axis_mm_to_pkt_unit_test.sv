@@ -1,13 +1,12 @@
 //-------------------------------------------------------------------------------
-//-- File:    axis_mm_to_pkt_unit_test.sv
-//--
-//-- Author:  Ian Buckley
-//--
-//-- Description:
-//-- 
-//--
-//--
-//--
+// File:    axis_mm_to_pkt_unit_test.sv
+//
+// Author:  Ian Buckley, Ion Concepts LLC
+//
+// Description:
+// 
+// License: CERN-OHL-P (See LICENSE.md)
+//
 //-------------------------------------------------------------------------------
 
 `timescale 1ns/1ps

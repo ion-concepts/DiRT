@@ -1,19 +1,21 @@
 //------------------------------------------------------------------------------
-//-- File:    axis_mux4.sv
-//--
-//-- Author:  Ian Buckley
-//--
-//-- Parameterizable:
-//-- * arbitration scheme
-//--   - When in Round Robin mode, if current active port is N, then higest prioirty port for next transaction is (N+1) % 4.
-//--     Transactions can be back to back.
-//--   - When in Priority mode, always transition back to IDLE after a transaction and burn 1 cycle. Port 0 is highest priority.
-//-- * buffer mode (included small FIFO)
-//-- * Width of datapath.
-//--
-//-- Description:
-//-- 4 way AXI Stream mux with no combinatorial through paths.
-//--
+// File:    axis_mux4.sv
+//
+// Author:  Ian Buckley, Ion Concepts LLC
+//
+// Parameterizable:
+// * arbitration scheme
+//   - When in Round Robin mode, if current active port is N, then higest prioirty port for next transaction is (N+1) % 4.
+//     Transactions can be back to back.
+//   - When in Priority mode, always transition back to IDLE after a transaction and burn 1 cycle. Port 0 is highest priority.
+// * buffer mode (included small FIFO)
+// * Width of datapath.
+//
+// Description:
+// 4 way AXI Stream mux with no combinatorial through paths.
+//
+// License: CERN-OHL-P (See LICENSE.md)
+//
 //-------------------------------------------------------------------------------
 `include "global_defs.svh"
 

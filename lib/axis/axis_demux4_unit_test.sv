@@ -6,6 +6,8 @@
 // Description:
 // Set of unit tests using SVUnit
 //
+// License: CERN-OHL-P (See LICENSE.md)
+//
 //-----------------------------------------------------------------------------
 
 //`timescale 1ns/1ps

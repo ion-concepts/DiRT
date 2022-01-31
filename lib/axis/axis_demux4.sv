@@ -1,7 +1,7 @@
 //----------------------------------------------------------------------------
 // File:    axis_demux4.sv
 //
-// Author:  Ian Buckley
+// Author:  Ian Buckley, Ion Concepts LLC
 //
 // Parameterizable:
 // * Width of datapath.
@@ -10,6 +10,8 @@
 // The DEMUX burns 1 IDLE cycle minumum for every transaction.
 // The DEMUX passes the initial line of the packet out (post-FIFO) as the header
 // to be parsed by external combinatorial logic to generate the select signal.
+//
+// License: CERN-OHL-P (See LICENSE.md)
 //
 //-----------------------------------------------------------------------------
 `include "global_defs.svh"

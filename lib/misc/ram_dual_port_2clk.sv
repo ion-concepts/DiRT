@@ -1,16 +1,17 @@
 //-------------------------------------------------------------------------------
-//-- File:    ram_dual_port_2clk.sv
-//--
-//-- Author:  Ian Buckley
-//--
-//-- Parameterizable:
-//-- * Width of datapath.
-//-- * Size (Depth) of RAM
-//--
-//-- Description:
-//-- Infer dual port, two clock synchronous SRAM.
-//--
-//--
+// File:    ram_dual_port_2clk.sv
+//
+// Author:  Ian Buckley
+//
+// Parameterizable:
+// * Width of datapath.
+// * Size (Depth) of RAM
+//
+// Description:
+// Infer dual port, two clock synchronous SRAM.
+//
+// License: CERN-OHL-P (See LICENSE.md)
+//
 //-------------------------------------------------------------------------------
 `include "global_defs.svh"
 

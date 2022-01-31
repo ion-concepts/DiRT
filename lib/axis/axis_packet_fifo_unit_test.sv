@@ -1,13 +1,14 @@
 //-------------------------------------------------------------------------------
-//-- File:    axis_packet_fifo_unit_test.sv
-//--
-//-- Author:  Ian Buckley
-//--
-//-- Description:
-//-- Set of unit tests using SVUnit
-//--
-//--
-//--
+// File:    axis_packet_fifo_unit_test.sv
+//
+// Author:  Ian Buckley, Ion Concepts LLC
+//
+// Description:
+// Set of unit tests using SVUnit
+//
+//
+// License: CERN-OHL-P (See LICENSE.md)
+//
 //-------------------------------------------------------------------------------
 
 `timescale 1ns/1ps

@@ -1,13 +1,13 @@
 //-------------------------------------------------------------------------------
-//-- File:    protocol.sv
-//--
-//-- Author:  Ian Buckley
-//--
-//-- Description:
-//-- Library of tasks to assist simulations of packet traffic over axis buses.
-//--
-//--
-//--
+// File:    protocol.sv
+//
+// Author:  Ian Buckley, Ion Concepts LLC
+//
+// Description:
+// Library of tasks to assist simulations of packet traffic over axis buses.
+//
+// License: CERN-OHL-P (See LICENSE.md)
+//
 //-------------------------------------------------------------------------------
 
 `ifndef _PROTOCOL_SV_

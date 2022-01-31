@@ -1,20 +1,22 @@
 //-------------------------------------------------------------------------------
-//-- File:    axis_packet_fifo.sv
-//--
-//-- Author:  Ian Buckley
-//--
-//-- Description:
-//--
-//-- Wraps regular stream FIFO's (1 clock only) to make them packet aware.
-//-- Only allows a packet to egress once its fully ingressed. This is very useful
-//-- when packet beats arrive at a slow rate relative to the (current) clock.
-//--
-//--  Parameterizable:
-//--  * Width of datapath.
-//--  * Size (Depth) of FIFO
-//--  * FPGA vendor
-//--  * Technology Library Vendor (Xilinx/Altera/etc)
-//--
+// File:    axis_packet_fifo.sv
+//
+// Author:  Ian Buckley, Ion Concepts LLC
+//
+// Description:
+//
+// Wraps regular stream FIFO's (1 clock only) to make them packet aware.
+// Only allows a packet to egress once its fully ingressed. This is very useful
+// when packet beats arrive at a slow rate relative to the (current) clock.
+//
+//  Parameterizable:
+//  * Width of datapath.
+//  * Size (Depth) of FIFO
+//  * FPGA vendor
+//  * Technology Library Vendor (Xilinx/Altera/etc)
+//
+// License: CERN-OHL-P (See LICENSE.md)
+//
 //-------------------------------------------------------------------------------
 `include "global_defs.svh"
 
