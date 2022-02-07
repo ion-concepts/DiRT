@@ -52,7 +52,7 @@ module axis_fifo
 	      begin
 		 //$display("unsupported config");
 	      end
-	    else if(SIZE==1)
+	    else if(SIZE<=2)
 	      begin
 		 // Uses flip-flops from SLICEL or SLICEM
 		 axis_minimal_fifo #(.WIDTH(WIDTH)) axis_minimal_fifo_i0
@@ -62,14 +62,17 @@ module axis_fifo
 	      end
 	    else if(SIZE<=5)
 	      begin
+		 logic [5:0] srl32_space;
+		 logic [5:0] srl32_occupied;
+		 
 		 // Uses SRL32 from SLICEM (most efficient at SIZE=5)
 		 axis_fifo_xilinx_srl32 #(.WIDTH(WIDTH)) axis_fifo_xilinx_srl32
 		   (.clk(clk), .rst(rst),
 		    .in_tdata(in_tdata), .in_tvalid(in_tvalid), .in_tready(in_tready),
 		    .out_tdata(out_tdata), .out_tvalid(out_tvalid), .out_tready(out_tready),
-		    .space(space[5:0]), .occupied(occupied[5:0]));
-		 assign space[15:6] = 10'd0;
-		 assign occupied[15:6] = 10'd0;
+		    .space(srl32_space), .occupied(srl32_occupied));
+		 assign space = srl32_space[SIZE:0];
+		 assign occupied = srl32_occupied[SIZE:0];
 	      end
 	    else
 	      begin

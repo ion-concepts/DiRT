@@ -21,12 +21,12 @@ module axis_fifo_xilinx_srl32
    (
     input logic 	     clk, 
     input logic 	     rst, 
-    input logic [WIDTH-1:0]  i_tdata,
-    input logic 	     i_tvalid,
-    output logic 	     i_tready,
-    output logic [WIDTH-1:0] o_tdata,
-    output logic 	     o_tvalid,
-    input logic 	     o_tready,
+    input logic [WIDTH-1:0]  in_tdata,
+    input logic 	     in_tvalid,
+    output logic 	     in_tready,
+    output logic [WIDTH-1:0] out_tdata,
+    output logic 	     out_tvalid,
+    input logic 	     out_tready,
 
    
     output reg [5:0] 	     space,
@@ -35,11 +35,14 @@ module axis_fifo_xilinx_srl32
 
    reg 		     full = 1'b0;
    reg 		     empty = 1'b1;
-   logic write        = i_tvalid & i_tready;
-   logic read         = o_tready & o_tvalid;
+   logic 	     write;
+   logic 	     read;
+   
+   assign write = in_tvalid & in_tready;
+   assign read = out_tready & out_tvalid;
 
-   assign i_tready  = ~full;
-   assign o_tvalid  = ~empty;
+   assign in_tready  = ~full;
+   assign out_tvalid  = ~empty;
    
    reg [4:0]      addr;
    genvar         i; 
@@ -48,9 +51,9 @@ module axis_fifo_xilinx_srl32
       for (i=0;i<WIDTH;i=i+1)
         begin : gen_srlc32e
            SRLC32E
-             srlc32e(.Q(o_tdata[i]), .Q31(),
+             srlc32e(.Q(out_tdata[i]), .Q31(),
                      .A(addr),
-                    .CE(write),.CLK(clk),.D(i_tdata[i]));
+                    .CE(write),.CLK(clk),.D(in_tdata[i]));
         end
    endgenerate
    

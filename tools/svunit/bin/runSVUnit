@@ -188,7 +188,7 @@ if ($simulator eq "modelsim" or $simulator eq "riviera") {
     $cmd .= " @compileargs @simargs --top-module testrunner --build";
 } elsif ($simulator eq "xsim") {
     # Vivado
-    $cmd .= " @compileargs; xelab -sv -timescale 1ns/1ps @compileargs --debug typical -L axis=../../axis/xsim.dir/axis -L misc=../../misc/xsim.dir/misc -L work work.testrunner; xsim @simargs";
+    $cmd .= " @compileargs; xelab -sv -timescale 1ns/1ps @compileargs --debug typical -L axis=../../axis/xsim.dir/axis -L misc=../../misc/xsim.dir/misc -L unisims_ver -L work work.testrunner; xsim @simargs";
 } else {
   $cmd .= " @compileargs @simargs -top testrunner";
 }

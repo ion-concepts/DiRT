@@ -162,7 +162,8 @@ class Packet;
    protected pkt_header_t header;
    protected pkt_payload_t payload;
    local int next;
-
+   local logic [15:0] count;
+   
 
    // Provide explicit initialization
    function void init;
@@ -286,13 +287,29 @@ class Packet;
 
    // Generate a random payload of length determined by header
    // (Note size in header is in bytes and includes the header.
-   // Also account for last line thats partially used by adding 7 bytes before /8)
    function void random();
       payload = new[`BYTES_TO_BEATS(this.header.length-16)];
       foreach (payload [i])
         payload[i] = {$random,$random};
    endfunction : random
+
+   // Generate a ramp inside payload of length determined by header
+   // (Note size in header is in bytes and includes the header.
+   // I & Q have same data.
+   function void ramp();
+      payload = new[`BYTES_TO_BEATS(this.header.length-16)];
+      count = 0;
+      foreach (payload [i]) begin
+         payload[i] = count << 48 |
+		      (count+1) << 32 |
+		      (count+2) << 16 |
+		      (count+3);
+	 count = count + 4;
+      end
+   endfunction : ramp
 endclass : Packet
+
+
 
 
 

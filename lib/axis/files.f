@@ -7,3 +7,5 @@ axis_mm_to_pkt.sv
 axis_mux4.sv
 axis_mux8.sv
 axis_packet_fifo.sv
+axis_stream_to_pkt.sv
+      
