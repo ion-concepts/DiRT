@@ -5,7 +5,8 @@ It is incorporated here using a git subtree
 Read more about git subtree's here: https://www.atlassian.com/git/tutorials/git-subtree
 
 ### Commands used to create this sub-tree:
-(From top of s2i-fpga hierarchy, with a clean repo)
+(From top of repository hierarchy, with a clean repo)
+
 git remote add -f svunit https://github.com/nosnhojn/svunit-code.git
 git subtree add --prefix tools/svunit svunit master --squash
 
