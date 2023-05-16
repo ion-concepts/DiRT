@@ -1,0 +1,207 @@
+#!/usr/bin/perl
+
+############################################################################
+#
+#  Copyright 2011 XtremeEDA Corp.
+#  
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#  
+#      http://www.apache.org/licenses/LICENSE-2.0
+#  
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+#
+############################################################################
+
+use strict;
+use Cwd;
+use Getopt::Long;
+use IO::File;
+use IO::Dir;
+use File::Glob;
+use File::Find;
+
+
+my $cwd = getcwd;
+my $pwd = ".";
+my $outdir = ".";
+my $g_found_unit_test = 0;
+my $FILELIST;
+my $VERSION;
+my $version;
+my $outdir = ".";
+my @tests;
+my $mock;
+my $uvm;
+my $wavedrom;
+my $help;
+
+
+
+##########################################################################
+# usage(): Prints the script usage.
+##########################################################################
+sub usage() {
+  print "\n";
+  print "Usage:  buildSVUnit [ -t <test> -h|--help ]\n\n";
+  print "  -o|--out                 : output directory for tmp and simulation files\n";
+  print "  -t|--test                : specifies a unit test to run (multiple can be given)\n";
+  print "  -m|--mock                : includes the uvm_mock_pkg to the final build file\n";
+  print "  -U|--uvm                 : build SVUnit with UVM\n";
+  print "  -w|--wavedrom            : process json files as wavedrom output\n";
+  print "  -h|--help                : prints this help screen\n";
+  print "\n";
+  exit 1;
+}
+
+
+sub getFilelists
+{
+  find({
+      wanted => sub {
+                      if (/\/svunit.f$/) {
+                        $FILELIST->print("-f $cwd/$_\n");
+                      }
+                    },
+      no_chdir => 1
+    }, qw( . ));
+}
+
+#############################################
+# sub buildTestrunner(@)
+#
+# build/run the testrunner commandline with
+# all the testsuites
+#############################################
+sub buildTestrunner
+{
+  my $cmd = "cd $outdir; create_testrunner.pl -overwrite -out testrunner.sv";
+  my $testsuites;
+
+  find({
+      wanted => sub {
+                      if (/\..*_testsuite\.sv$/) {
+                        $FILELIST->print("$_\n");
+                        $testsuites .= " -add $_" if /\..*_testsuite.sv/;
+                      }
+                    },
+      no_chdir => 0
+    }, $outdir);
+
+  if (!defined $testsuites) {
+    unlink ".svunit.f";
+    return 1;
+  }
+
+  else {
+    system("$cmd$testsuites");
+    system("mv $outdir/testrunner.sv $outdir/.testrunner.sv");
+    $FILELIST->print(".testrunner.sv\n");
+    return 0;
+  }
+}
+
+
+#############################################
+# sub buildTestsuite($)
+#
+# recursively go through the directory tree,
+# collect all the unit tests and write the
+# fileslist
+#############################################
+
+sub buildTestsuite
+{
+  my $dir = shift;
+  my @unittest;
+  my $parentDir;
+
+  my $dirID = $dir;
+  $dirID =~ s/[\/\.-]/_/g;
+  $dirID = "." . $dirID;
+
+  @unittest = getUnittests($dir);
+
+  # create the testsuite for this directory
+  if (@unittest > 0) {
+    my $cmd = "create_testsuite.pl -overwrite -out $outdir/$dirID\_testsuite.sv";
+    foreach (@unittest) {
+      $FILELIST->print("$cwd/$_\n");
+      $cmd .= " -add $_";
+    }
+    system($cmd);
+    $FILELIST->print("+incdir+$cwd/$dir\n");
+  }
+
+  # recursively do the same through sub-directories
+  if (@tests == 0) {
+    foreach (@_ = <$dir/*>) {
+      if (-d "$_" && !m/\.$/) {
+        buildTestsuite("$_");
+      }
+    }
+  }
+}
+
+
+sub getUnittests {
+  my $dir = shift;
+  my @unittests;
+  if (@tests) {
+    foreach (@tests) {
+      if (-e "$dir/$_") {
+        push(@unittests, "$dir/$_");
+      }
+      else {
+        print "ERROR: Unit test '$_' could not be found in directory $dir\n";
+        exit 1;
+      }
+    }
+  }
+  else {
+    @unittests = <$dir/*_unit_test.sv>;
+  }
+  return @unittests;
+}
+
+
+
+GetOptions("o|out=s" => \$outdir,
+           "t|test=s" => \@tests,
+           "m|mock" => \$mock,
+           "U|uvm" => \$uvm,
+           "w|wavedrom" => \$wavedrom,
+           "h|help" => \$help
+           ) or usage();
+
+usage() if $help;
+
+if (! -e $outdir ) {
+  system("mkdir $outdir");
+}
+$FILELIST = IO::File->new();
+$FILELIST->open(">$outdir/.svunit.f");
+$FILELIST->print("+incdir+$cwd\n");
+$FILELIST->print("+incdir+$ENV{SVUNIT_INSTALL}/svunit_base\n");
+$FILELIST->print("$ENV{SVUNIT_INSTALL}/svunit_base/svunit_pkg.sv\n");
+if (defined $mock) {
+  $FILELIST->print("$ENV{SVUNIT_INSTALL}/svunit_base/uvm-mock/svunit_uvm_mock_pkg.sv\n");
+}
+
+if ($uvm) {
+  $FILELIST->print("+incdir+$ENV{SVUNIT_INSTALL}/svunit_base/uvm-mock\n");
+  $FILELIST->print("$ENV{SVUNIT_INSTALL}/svunit_base/uvm-mock/svunit_uvm_mock_pkg.sv\n");
+}
+if ($wavedrom) {
+  system("python3 $ENV{SVUNIT_INSTALL}/bin/wavedromSVUnit.py");
+}
+
+getFilelists;
+buildTestsuite($pwd);
+exit buildTestrunner;
+#print "Info: Found no unit tests. No SVUnit framework created.\n";

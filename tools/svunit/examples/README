@@ -1,0 +1,10 @@
+Don't forget to read the svunit-code/README for instructions on
+how to setup the SVUnit test environment and instructions for
+building your own tests.
+
+I'd recommend going into each individual example to run them. Thouhg
+because SVUnit can recursively collect unit tests and testsuites you
+*can* run them all from this directory within the same sim...
+
+runSVUnit -uvm -define CLK_PERIOD=5ns -s ius -f ./uvm/uvm_express/cov.f  # for ius
+runSVUnit -uvm -define CLK_PERIOD=5ns -s <simulator>  # questa or vcs
