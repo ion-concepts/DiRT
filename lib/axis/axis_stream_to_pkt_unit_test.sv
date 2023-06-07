@@ -12,6 +12,7 @@
 `timescale 1ns/1ps
 
 `include "svunit_defines.svh"
+`include "axis_stream_to_pkt.sv"
 
 `ifndef _PROTOCOL_SV_
 `include "protocol.sv"

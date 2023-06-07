@@ -14,7 +14,7 @@
 `timescale 1ns/1ps
 
 `include "svunit_defines.svh"
-//`include "axis_packet_fifo.v"
+`include "axis_packet_fifo.sv"
 
 module axis_packet_fifo_unit_test;
   timeunit 1ns; 
