@@ -34,7 +34,6 @@
 //
 //-----------------------------------------------------------------------------
 `include "global_defs.svh"
-`include "protocol.sv"
 
 module axis_stream_to_pkt
   #(
@@ -75,6 +74,8 @@ module axis_stream_to_pkt
     input logic 	       out_tready,
     output logic 	       out_tlast
     );
+
+   import dirt_protocol::*;
    
    // Hardcode all packets as DiRT 16bit IQ type for now.
    pkt_type_t   packet_type;

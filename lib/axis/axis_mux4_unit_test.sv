@@ -12,14 +12,12 @@
 `timescale 1ns/1ps
 
 `include "svunit_defines.svh"
-`include "axis_mux4.sv"
-`ifndef _AXIS_SV_
-`include "axis.sv"
-`endif
+`include "axis_mux4_wrapper.sv"
 
 module axis_mux4_unit_test;
    timeunit 1ns; 
    timeprecision 1ps;
+   import dirt_protocol::*;
    import svunit_pkg::svunit_testcase;
 
    string name = "axis_mux4_ut";
@@ -28,12 +26,11 @@ module axis_mux4_unit_test;
    logic  clk;
    logic  rst;
    
-   axis_slave_t in0(.clk(clk));
-   axis_slave_t in1(.clk(clk));
-   axis_slave_t in2(.clk(clk));
-   axis_slave_t in3(.clk(clk));
-   axis_master_t out0(.clk(clk));
-   
+   axis_t in0(.clk(clk));
+   axis_t in1(.clk(clk));
+   axis_t in2(.clk(clk));
+   axis_t in3(.clk(clk));
+   axis_t out0(.clk(clk));
 
    logic [63:0] test_tdata;
    logic 	test_tlast;
@@ -56,39 +53,19 @@ module axis_mux4_unit_test;
    // This is the UUT that we're 
    // running the Unit Tests on
    //===================================
-   axis_mux4 #(
-	       .WIDTH(64), 
-	       .BUFFER(0), 
-	       .PRIORITY(0))
-   my_axis_mux4_0(
-		  .clk(clk),
-		  .rst(rst),
-		  // In0
-		  .in0_tdata(in0.tdata),
-		  .in0_tvalid(in0.tvalid),
-		  .in0_tready(in0.tready),
-		  .in0_tlast(in0.tlast),
-		  // In1
-		  .in1_tdata(in1.tdata),
-		  .in1_tvalid(in1.tvalid),
-		  .in1_tready(in1.tready),
-		  .in1_tlast(in1.tlast),
-		  // In2
-		  .in2_tdata(in2.tdata),
-		  .in2_tvalid(in2.tvalid),
-		  .in2_tready(in2.tready),
-		  .in2_tlast(in2.tlast),
-		  // In3
-		  .in3_tdata(in3.tdata),
-		  .in3_tvalid(in3.tvalid),
-		  .in3_tready(in3.tready),
-		  .in3_tlast(in3.tlast),
-		  // Out
-		  .out_tdata(out0.tdata),
-		  .out_tvalid(out0.tvalid),
-		  .out_tready(out0.tready),
-		  .out_tlast(out0.tlast));
 
+   axis_mux4_wrapper #(
+       .BUFFER(0),
+       .PRIORITY(0))
+   my_axis_mux4_0(
+      .clk(clk),
+      .rst(rst),
+      .in0_axis(in0),
+      .in1_axis(in1),
+      .in2_axis(in2),
+      .in3_axis(in3),
+      .out_axis(out0)
+   );
   
    //===================================
    // Build

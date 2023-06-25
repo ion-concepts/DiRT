@@ -12,18 +12,11 @@
 `timescale 1ns/1ps
 
 `include "svunit_defines.svh"
-`include "axis_mm_to_pkt.sv"
 
-`ifndef _PROTOCOL_SV_
-`include "protocol.sv"
-`endif
-`ifndef _AXIS_SV_
-`include "axis.sv"
-`endif
 module axis_mm_to_pkt_unit_test;
    timeunit 1ns; 
    timeprecision 1ps;
-
+   import dirt_protocol::*;
    import svunit_pkg::svunit_testcase;
 
    string name = "axis_mm_to_pkt_ut";
@@ -209,14 +202,14 @@ module axis_mm_to_pkt_unit_test;
          test_packets[0].set_flow_dst(OUTPUT);
          // Unsigned value constrained between min packet size and buffer size.
          // (whole number of beats converted to bytes)
-         test_packets[packet_count_in].set_length (`BEATS_TO_BYTES({$random} % (space-3) + 3));
-         space = space - `BYTES_TO_BEATS(test_packets[packet_count_in].get_length);
+         test_packets[packet_count_in].set_length (beats_to_bytes({$random} % (space-3) + 3));
+         space = space - bytes_to_beats(test_packets[packet_count_in].get_length);
          // Generate random payload.
          test_packets[packet_count_in].random;
          // Push new packet into test bench
          in.push_header(test_packets[packet_count_in].get_header);
          test_packets[packet_count_in].rewind_payload;
-         for (x = 0 ; x < (`BYTES_TO_BEATS(test_packets[packet_count_in].get_length) - 3) ; x = x + 1)
+         for (x = 0 ; x < (bytes_to_beats(test_packets[packet_count_in].get_length) - 3) ; x = x + 1)
            in.push_payload(test_packets[packet_count_in].get_beat,0);
          // Set last
          in.push_payload(test_packets[packet_count_in].get_beat,1);
@@ -232,8 +225,8 @@ module axis_mm_to_pkt_unit_test;
             // Add delta to timestamp
             test_packets[packet_count_in].set_timestamp(test_packets[packet_count_in].get_timestamp + 'd100);
             // Unsigned value constrained between min packet size and remaining buffer size.
-            test_packets[packet_count_in].set_length (`BEATS_TO_BYTES({$random} % (space-3) + 3));
-            space = space - `BYTES_TO_BEATS(test_packets[packet_count_in].get_length);
+            test_packets[packet_count_in].set_length (beats_to_bytes({$random} % (space-3) + 3));
+            space = space - bytes_to_beats(test_packets[packet_count_in].get_length);
             if (space < 3) begin
                // Make packet bigger so all of last bit of buffer is used.
                test_packets[packet_count_in].set_length(test_packets[packet_count_in].get_length+(space<<3));
@@ -245,7 +238,7 @@ module axis_mm_to_pkt_unit_test;
             in.push_header(test_packets[packet_count_in].get_header);
             test_packets[packet_count_in].rewind_payload;
 
-            for (x = 0 ; x < (`BYTES_TO_BEATS(test_packets[packet_count_in].get_length) - 3) ; x = x + 1)
+            for (x = 0 ; x < (bytes_to_beats(test_packets[packet_count_in].get_length) - 3) ; x = x + 1)
               in.push_payload(test_packets[packet_count_in].get_beat,0);
             // Set last
             in.push_payload(test_packets[packet_count_in].get_beat,1);
@@ -286,7 +279,7 @@ module axis_mm_to_pkt_unit_test;
               `FAIL_UNLESS(header_compare(test_packets[packet_count_out].get_header,header_out));
               // Get packet payload and compare with reference
               test_packets[packet_count_out].rewind_payload;
-              for (x = 0 ; x < (`BYTES_TO_BEATS(test_packets[packet_count_out].get_length) - 3) ; x = x + 1) begin
+              for (x = 0 ; x < (bytes_to_beats(test_packets[packet_count_out].get_length) - 3) ; x = x + 1) begin
             	 out.pull_beat(beat1,tlast_out);
                  `FAIL_UNLESS(tlast_out === 1'b0);              
                  `FAIL_UNLESS_EQUAL(beat1,test_packets[packet_count_out].get_beat);                 

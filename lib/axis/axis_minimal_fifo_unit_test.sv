@@ -10,10 +10,10 @@
 //
 //-------------------------------------------------------------------------------
 
-//`timescale 1ns/1ps
+`timescale 1ns/1ps
 
 `include "svunit_defines.svh"
-`include "axis_minimal_fifo.sv"
+`include "axis_minimal_fifo_wrapper.sv"
 
 module axis_minimal_fifo_unit_test;
   timeunit 1ns; 
@@ -26,9 +26,8 @@ module axis_minimal_fifo_unit_test;
    logic clk;
    logic rst;
    
-   axis_slave_t in0(.clk(clk));
-   axis_master_t out0(.clk(clk));
-   
+   axis_t in0(.clk(clk));
+   axis_t out0(.clk(clk));
 
    logic [63:0] test_tdata;
    logic 	test_tlast;
@@ -51,25 +50,19 @@ module axis_minimal_fifo_unit_test;
   // This is the UUT that we're 
   // running the Unit Tests on
   //===================================
-  axis_minimal_fifo 
-    #(.WIDTH(65))
-   my_axis_minimal_fifo
+
+  axis_minimal_fifo_wrapper my_axis_minimal_fifo
      (
       .clk(clk),
       .rst(rst),
       // In
-      .in_tdata({in0.tlast,in0.tdata}),
-      .in_tvalid(in0.tvalid),
-      .in_tready(in0.tready),
+      .in_axis(in0),
       // Out
-      .out_tdata({out0.tlast,out0.tdata}),
-      .out_tvalid(out0.tvalid),
-      .out_tready(out0.tready),
-      // Status 
-      .space(space),
-      .occupied(occupied)
+      .out_axis(out0),
+       // Status
+      .space_out(space),
+      .occupied_out(occupied)
       );
-
 
    //===================================
   // Build
