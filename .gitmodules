@@ -1,0 +1,3 @@
+[submodule "tools/svunit"]
+	path = tools/svunit
+	url = https://github.com/svunit/svunit.git

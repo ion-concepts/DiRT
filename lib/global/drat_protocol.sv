@@ -18,8 +18,12 @@
  `include "axis.sv"
 `endif
 
-package dirt_protocol;
+// Relies on SVUnit
+`include "svunit_defines.svh"
+
+package drat_protocol;
 // Make the math trivial to calculate bytes from beats.
+   
 // (xsim in 2022.2 does not support 'let')
  let beats_to_bytes(x) = (x)*8;
  let bytes_to_beats(x) = (((x)+7)>>3);
@@ -533,7 +537,7 @@ endpackage
 //-- Inherit basic AXIS interface into packet aware interface
 //-------------------------------------------------------------------------------
 interface pkt_stream_t (input clk);
-   import dirt_protocol::*;
+   import drat_protocol::*;
    axis_t #(.WIDTH(64)) axis (.clk(clk));
 
 

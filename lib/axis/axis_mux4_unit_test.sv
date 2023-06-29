@@ -13,11 +13,13 @@
 
 `include "svunit_defines.svh"
 `include "axis_mux4_wrapper.sv"
+//`include "drat_protocol.sv"
+
 
 module axis_mux4_unit_test;
    timeunit 1ns; 
    timeprecision 1ps;
-   import dirt_protocol::*;
+   import drat_protocol::*;
    import svunit_pkg::svunit_testcase;
 
    string name = "axis_mux4_ut";

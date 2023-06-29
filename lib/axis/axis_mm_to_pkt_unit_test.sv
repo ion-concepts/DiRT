@@ -12,11 +12,12 @@
 `timescale 1ns/1ps
 
 `include "svunit_defines.svh"
+//`include "drat_protocol.sv"
 
 module axis_mm_to_pkt_unit_test;
    timeunit 1ns; 
    timeprecision 1ps;
-   import dirt_protocol::*;
+   import drat_protocol::*;
    import svunit_pkg::svunit_testcase;
 
    string name = "axis_mm_to_pkt_ut";

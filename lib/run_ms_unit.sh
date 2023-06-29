@@ -34,7 +34,7 @@ popd # 2>&1 > /dev/null
 
 # Run SVUNIT
 echo "runSVUnit"
-runSVUnit -s modelsim --c_arg "-incdir ../../global -incdir ../../axis" -f dependencies.f -o sim
+runSVUnit -s modelsim --c_arg "-incdir ../../global -incdir ../../axis +libext+.sv -y ../../axis" -f dependencies.f -o sim
 #runSVUnit -s xsim -o sim --c_arg "-include ../../global -include ../../axis" --r_arg " work.testrunner --R " # "work.testrunner --R --gui"
 if [ $? -ne 0 ]; then exit 1 ; fi
 popd # 2>&1 > /dev/null

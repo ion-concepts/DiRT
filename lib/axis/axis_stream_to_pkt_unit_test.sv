@@ -17,7 +17,7 @@
 module axis_stream_to_pkt_unit_test;
    timeunit 1ns; 
    timeprecision 1ps;
-   import dirt_protocol::*;
+   import drat_protocol::*;
    import svunit_pkg::svunit_testcase;
 
    string name = "axis_stream_to_pkt_ut";
@@ -46,7 +46,7 @@ module axis_stream_to_pkt_unit_test;
    // CSR signals
    logic        enable;
    logic [12:0] packet_size; // Packet size expressed in 64bit words including headers
-   logic [31:0] flow_id; // DiRT Flow ID for this flow (union of src + dst)
+   logic [31:0] flow_id; // DRaT Flow ID for this flow (union of src + dst)
    logic 	flow_id_changed; // Pulse high one cycle when flow_id updated.
    wire 	idle;
    wire 	overflow;
@@ -147,7 +147,7 @@ module axis_stream_to_pkt_unit_test;
       //-------------------------------------------------------------------------------
       .enable(enable),
       .packet_size(packet_size), // Packet size expressed in 64bit words including headers
-      .flow_id(flow_id), // DiRT Flow ID for this flow (union of src + dst)
+      .flow_id(flow_id), // DRaT Flow ID for this flow (union of src + dst)
       .flow_id_changed(flow_id_changed), // Pulse high one cycle when flow_id updated.
       // Status Flags
       .idle(idle),
