@@ -13,10 +13,8 @@
 `timescale 1ns/1ps
 
 `include "svunit_defines.svh"
-`include "axis_mux8.sv"
-`ifndef _AXIS_SV_
-`include "axis.sv"
-`endif
+`include "axis_mux8_wrapper.sv"
+
 module axis_mux8_unit_test;
    timeunit 1ns; 
    timeprecision 1ps;
@@ -29,17 +27,16 @@ module axis_mux8_unit_test;
    logic  clk;
    logic rst;
    
-   axis_slave_t in0(.clk(clk));
-   axis_slave_t in1(.clk(clk));
-   axis_slave_t in2(.clk(clk));
-   axis_slave_t in3(.clk(clk));
-   axis_slave_t in4(.clk(clk));
-   axis_slave_t in5(.clk(clk));
-   axis_slave_t in6(.clk(clk));
-   axis_slave_t in7(.clk(clk));
-   
-   axis_master_t out0(.clk(clk));
-   
+   axis_t in0(.clk(clk));
+   axis_t in1(.clk(clk));
+   axis_t in2(.clk(clk));
+   axis_t in3(.clk(clk));
+   axis_t in4(.clk(clk));
+   axis_t in5(.clk(clk));
+   axis_t in6(.clk(clk));
+   axis_t in7(.clk(clk));
+
+   axis_t out0(.clk(clk));
 
    logic [63:0] test_tdata;
    logic 	test_tlast;
@@ -62,62 +59,25 @@ module axis_mux8_unit_test;
   // This is the UUT that we're 
   // running the Unit Tests on
   //===================================
-   axis_mux8 
+
+   axis_mux8_wrapper
      #(
-       .WIDTH(64), 
-       .BUFFER(0), 
+       .BUFFER(0),
        .PRIORITY(0))
    my_axis_mux8
       (
        .clk(clk),
        .rst(rst),
-       // In0
-       .in0_tdata(in0.tdata),
-       .in0_tvalid(in0.tvalid),
-       .in0_tready(in0.tready),
-       .in0_tlast(in0.tlast),
-       // In1
-       .in1_tdata(in1.tdata),
-       .in1_tvalid(in1.tvalid),
-       .in1_tready(in1.tready),
-       .in1_tlast(in1.tlast),
-       // In2
-       .in2_tdata(in2.tdata),
-       .in2_tvalid(in2.tvalid),
-       .in2_tready(in2.tready),
-       .in2_tlast(in2.tlast),
-       // In3
-       .in3_tdata(in3.tdata),
-       .in3_tvalid(in3.tvalid),
-       .in3_tready(in3.tready),
-       .in3_tlast(in3.tlast),
-       // In4
-       .in4_tdata(in4.tdata),
-       .in4_tvalid(in4.tvalid),
-       .in4_tready(in4.tready),
-       .in4_tlast(in4.tlast),
-       // In5
-       .in5_tdata(in5.tdata),
-       .in5_tvalid(in5.tvalid),
-       .in5_tready(in5.tready),
-       .in5_tlast(in5.tlast),
-       // In6
-       .in6_tdata(in6.tdata),
-       .in6_tvalid(in6.tvalid),
-       .in6_tready(in6.tready),
-       .in6_tlast(in6.tlast),
-       // In7
-       .in7_tdata(in7.tdata),
-       .in7_tvalid(in7.tvalid),
-       .in7_tready(in7.tready),
-       .in7_tlast(in7.tlast),       
-       // Out
-       .out_tdata(out0.tdata),
-       .out_tvalid(out0.tvalid),
-       .out_tready(out0.tready),
-       .out_tlast(out0.tlast)
+       .in0_axis(in0),
+       .in1_axis(in1),
+       .in2_axis(in2),
+       .in3_axis(in3),
+       .in4_axis(in4),
+       .in5_axis(in5),
+       .in6_axis(in6),
+       .in7_axis(in7),
+       .out_axis(out0)
        );
-
 
   //===================================
   // Build

@@ -12,17 +12,12 @@
 `timescale 1ns/1ps
 
 `include "svunit_defines.svh"
+`include "axis_stream_to_pkt.sv"
 
-`ifndef _PROTOCOL_SV_
-`include "protocol.sv"
-`endif
-`ifndef _AXIS_SV_
-`include "axis.sv"
-`endif
 module axis_stream_to_pkt_unit_test;
    timeunit 1ns; 
    timeprecision 1ps;
-
+   import drat_protocol::*;
    import svunit_pkg::svunit_testcase;
 
    string name = "axis_stream_to_pkt_ut";
@@ -51,7 +46,7 @@ module axis_stream_to_pkt_unit_test;
    // CSR signals
    logic        enable;
    logic [12:0] packet_size; // Packet size expressed in 64bit words including headers
-   logic [31:0] flow_id; // DiRT Flow ID for this flow (union of src + dst)
+   logic [31:0] flow_id; // DRaT Flow ID for this flow (union of src + dst)
    logic 	flow_id_changed; // Pulse high one cycle when flow_id updated.
    wire 	idle;
    wire 	overflow;
@@ -152,7 +147,7 @@ module axis_stream_to_pkt_unit_test;
       //-------------------------------------------------------------------------------
       .enable(enable),
       .packet_size(packet_size), // Packet size expressed in 64bit words including headers
-      .flow_id(flow_id), // DiRT Flow ID for this flow (union of src + dst)
+      .flow_id(flow_id), // DRaT Flow ID for this flow (union of src + dst)
       .flow_id_changed(flow_id_changed), // Pulse high one cycle when flow_id updated.
       // Status Flags
       .idle(idle),
@@ -254,15 +249,15 @@ module axis_stream_to_pkt_unit_test;
          test_packets[0].set_flow_dst(OUTPUT);
          // Unsigned value constrained between min packet size and buffer size.
          // (whole number of beats converted to bytes)
-         //test_packets[packet_count_in].set_length (`BEATS_TO_BYTES({$random} % (space-3) + 3));
-	 test_packets[0].set_length(`BEATS_TO_BYTES('d128)); // fixed 128beat packet size
-         space = space - `BYTES_TO_BEATS(test_packets[packet_count_in].get_length);
+         //test_packets[packet_count_in].set_length (beats_to_bytes({$random} % (space-3) + 3));
+	 test_packets[0].set_length(beats_to_bytes('d128)); // fixed 128beat packet size
+         space = space - bytes_to_beats(test_packets[packet_count_in].get_length);
          // Generate ramped payload.
          test_packets[0].ramp;
 
          test_packets[0].rewind_payload;
 	 // Get 64b payload beats and pack them into two 32b FIFO entries				  
-         for (x = 0 ; x < (`BYTES_TO_BEATS(test_packets[packet_count_in].get_length) - 2) ; x = x + 1)
+         for (x = 0 ; x < (bytes_to_beats(test_packets[packet_count_in].get_length) - 2) ; x = x + 1)
 	    begin
 		beat_in = test_packets[0].get_beat;
 	        push_fifo(beat_in[63:32],0);
@@ -279,17 +274,17 @@ module axis_stream_to_pkt_unit_test;
             test_packets[packet_count_in].inc_seq_id;
             // Add delta to timestamp
             test_packets[packet_count_in].set_timestamp(test_packets[packet_count_in].get_timestamp + 
-				  ((`BYTES_TO_BEATS(test_packets[packet_count_in].get_length)-2)*2)); // Add sample count of last packet
+				  ((bytes_to_beats(test_packets[packet_count_in].get_length)-2)*2)); // Add sample count of last packet
             // Unsigned value constrained between min packet size and remaining buffer size.
             //test_packets[packet_count_in].set_length ('d128)); // fixed 128beat packet size
-            space = space - `BYTES_TO_BEATS(test_packets[packet_count_in].get_length);
+            space = space - bytes_to_beats(test_packets[packet_count_in].get_length);
           
             // Generate ramped payload.
             test_packets[packet_count_in].ramp;
 
             test_packets[packet_count_in].rewind_payload;
 	    // Get 64b payload beats and pack them into two 32b FIFO entries					  
-            for (x = 0 ; x < (`BYTES_TO_BEATS(test_packets[packet_count_in].get_length) - 3) ; x = x + 1)
+            for (x = 0 ; x < (bytes_to_beats(test_packets[packet_count_in].get_length) - 3) ; x = x + 1)
 	      begin
 		 beat_in = test_packets[packet_count_in].get_beat;
 	         push_fifo(beat_in[63:32],0);
@@ -307,7 +302,7 @@ module axis_stream_to_pkt_unit_test;
          // Bring CSRs to reset like values.
          ready_to_test <= 0;
          enable <= 0;
-         packet_size <= `BYTES_TO_BEATS(test_packets[0].get_length);
+         packet_size <= bytes_to_beats(test_packets[0].get_length);
          flow_id <= test_packets[0].get_flow_id;
          flow_id_changed <= 1;
 	 @(posedge clk);
@@ -349,7 +344,7 @@ module axis_stream_to_pkt_unit_test;
               `FAIL_UNLESS(header_compare(test_packets[packet_count_out].get_header,header_out));
               // Get packet payload and compare with reference
               test_packets[packet_count_out].rewind_payload;
-              for (x = 0 ; x < (`BYTES_TO_BEATS(test_packets[packet_count_out].get_length) - 3) ; x = x + 1) begin
+              for (x = 0 ; x < (bytes_to_beats(test_packets[packet_count_out].get_length) - 3) ; x = x + 1) begin
             	 out.pull_beat(beat1,tlast_out);
                  `FAIL_UNLESS(tlast_out === 1'b0);              
                  `FAIL_UNLESS_EQUAL(beat1,test_packets[packet_count_out].get_beat);                 
@@ -397,15 +392,15 @@ module axis_stream_to_pkt_unit_test;
 	 
          // Unsigned value constrained between min packet size and buffer size.
          // (whole number of beats converted to bytes)
-         //test_packets[packet_count_in].set_length (`BEATS_TO_BYTES({$random} % (space-3) + 3));
-	 test_packets[0].set_length(`BEATS_TO_BYTES('d128)); // fixed 128beat packet size
-         space = space - `BYTES_TO_BEATS(test_packets[packet_count_in].get_length);
+         //test_packets[packet_count_in].set_length (beats_to_bytes({$random} % (space-3) + 3));
+	 test_packets[0].set_length(beats_to_bytes('d128)); // fixed 128beat packet size
+         space = space - bytes_to_beats(test_packets[packet_count_in].get_length);
          // Generate ramped payload.
          test_packets[0].ramp;
 
          test_packets[0].rewind_payload;
 	 // Get 64b payload beats and pack them into two 32b FIFO entries				  
-         for (x = 0 ; x < (`BYTES_TO_BEATS(test_packets[packet_count_in].get_length) - 2) ; x = x + 1)
+         for (x = 0 ; x < (bytes_to_beats(test_packets[packet_count_in].get_length) - 2) ; x = x + 1)
 	    begin
 		beat_in = test_packets[0].get_beat;
 	        push_fifo(beat_in[63:32],0);
@@ -422,17 +417,17 @@ module axis_stream_to_pkt_unit_test;
             test_packets[packet_count_in].inc_seq_id;
             // Add delta to timestamp
             test_packets[packet_count_in].set_timestamp(test_packets[packet_count_in].get_timestamp + 
-				  ((`BYTES_TO_BEATS(test_packets[packet_count_in].get_length)-2)*4)); // Add sample count of last packet
+				  ((bytes_to_beats(test_packets[packet_count_in].get_length)-2)*4)); // Add sample count of last packet
             // Unsigned value constrained between min packet size and remaining buffer size.
             //test_packets[packet_count_in].set_length ('d128)); // fixed 128beat packet size
-            space = space - `BYTES_TO_BEATS(test_packets[packet_count_in].get_length);
+            space = space - bytes_to_beats(test_packets[packet_count_in].get_length);
           
             // Generate ramped payload.
             test_packets[packet_count_in].ramp;
 
             test_packets[packet_count_in].rewind_payload;
 	    // Get 64b payload beats and pack them into two 32b FIFO entries					  
-            for (x = 0 ; x < (`BYTES_TO_BEATS(test_packets[packet_count_in].get_length) - 3) ; x = x + 1)
+            for (x = 0 ; x < (bytes_to_beats(test_packets[packet_count_in].get_length) - 3) ; x = x + 1)
 	      begin
 		 beat_in = test_packets[packet_count_in].get_beat;
 	         push_fifo(beat_in[63:32],0);
@@ -450,7 +445,7 @@ module axis_stream_to_pkt_unit_test;
          // Bring CSRs to reset like values.
          ready_to_test <= 0;
          enable <= 0;
-         packet_size <= `BYTES_TO_BEATS(test_packets[0].get_length);
+         packet_size <= bytes_to_beats(test_packets[0].get_length);
          flow_id <= test_packets[0].get_flow_id;
          flow_id_changed <= 1;
 	 @(posedge clk);
@@ -502,7 +497,7 @@ module axis_stream_to_pkt_unit_test;
               `FAIL_UNLESS(header_compare(test_packets[packet_count_out].get_header,header_out));
               // Get packet payload and compare with reference
               test_packets[packet_count_out].rewind_payload;
-              for (x = 0 ; x < (`BYTES_TO_BEATS(test_packets[packet_count_out].get_length) - 3) ; x = x + 1) begin
+              for (x = 0 ; x < (bytes_to_beats(test_packets[packet_count_out].get_length) - 3) ; x = x + 1) begin
             	 out.pull_beat(beat1,tlast_out);
                  `FAIL_UNLESS(tlast_out === 1'b0);              
                  `FAIL_UNLESS_EQUAL(beat1,test_packets[packet_count_out].get_beat);                 

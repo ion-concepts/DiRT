@@ -13,7 +13,7 @@
 //`timescale 1ns/1ps
 
 `include "svunit_defines.svh"
-`include "axis_fifo.sv"
+`include "axis_fifo_wrapper.sv"
 
 module axis_fifo_unit_test;
   timeunit 1ns; 
@@ -28,8 +28,8 @@ module axis_fifo_unit_test;
    logic clk;
    logic rst;
    
-   axis_slave_t in0(.clk(clk));
-   axis_master_t out0(.clk(clk));
+   axis_t in0(.clk(clk));
+   axis_t out0(.clk(clk));
    
 
    logic [63:0] test_tdata;
@@ -51,8 +51,9 @@ module axis_fifo_unit_test;
   // This is the UUT that we're 
   // running the Unit Tests on
   //===================================
-  axis_fifo 
-    #(.WIDTH(65),
+
+  axis_fifo_wrapper
+    #(
       .SIZE(SIZE)
       )
    my_axis_fifo
@@ -61,18 +62,13 @@ module axis_fifo_unit_test;
       .clk(clk),
       .rst(rst),
       // -- Input AXI Stream
-      .in_tdata({in0.tlast,in0.tdata}),
-      .in_tvalid(in0.tvalid),
-      .in_tready(in0.tready),
+      .in_axis(in0),
       //-- Output AXI Stream
-      .out_tdata({out0.tlast,out0.tdata}),
-      .out_tvalid(out0.tvalid),
-      .out_tready(out0.tready),
+      .out_axis(out0),
       //-- Current fullness of FIFO
       .space(space),
       .occupied(occupied)
       );
-
 
   //===================================
   // Build

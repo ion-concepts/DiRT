@@ -1,7 +1,0 @@
-{
-  "name": "task1",
-  "signal": [
-    {"name": "clk", "wave": "p." },
-    {"name": "psel", "wave": "01"}
-  ]
-}

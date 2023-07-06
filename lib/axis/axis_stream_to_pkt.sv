@@ -34,7 +34,6 @@
 //
 //-----------------------------------------------------------------------------
 `include "global_defs.svh"
-`include "protocol.sv"
 
 module axis_stream_to_pkt
   #(
@@ -51,7 +50,7 @@ module axis_stream_to_pkt
     input logic 	       enable,
     // Populate DRaT Header fields
     input logic [15:3] 	       packet_size, // Packet size expressed in 64bit words including headers
-    input logic [31:0] 	       flow_id, // DiRT Flow ID for this flow (union of src + dst)
+    input logic [31:0] 	       flow_id, // DRaT Flow ID for this flow (union of src + dst)
     input logic 	       flow_id_changed, // Pulse high one cycle when flow_id updated.
     // Status Flags
     output logic 	       idle,
@@ -68,15 +67,17 @@ module axis_stream_to_pkt
     input logic [IQ_WIDTH-1:0] in_q,
     input logic 	       in_valid,
     //
-    // DiRT Packetized Output AXIS Bus
+    // DRaT Packetized Output AXIS Bus
     //
     output logic [63:0]        out_tdata,
     output logic 	       out_tvalid,
     input logic 	       out_tready,
     output logic 	       out_tlast
     );
+
+   import drat_protocol::*;
    
-   // Hardcode all packets as DiRT 16bit IQ type for now.
+   // Hardcode all packets as DRaT 16bit IQ type for now.
    pkt_type_t   packet_type;
    assign packet_type = INT16_COMPLEX;
    
@@ -208,13 +209,16 @@ module axis_stream_to_pkt
    // We will only use the holding data when state is INPUT_PHASE2 and
    // the input data is valid...which implies it currently holds valid data from INPUT_PHASE1.
    // Other times its contents will be overwritten without ever being read.
-  always_ff @(posedge clk) begin
+   always_ff @(posedge clk) begin
       if (rst)
         sample_holding_reg <= 0;
       else if (in_valid) begin
          sample_holding_reg <= {in_i,in_q};
       end
    end
+
+   // Unused
+   wire [SAMPLE_FIFO_SIZE:0] space_sample, occupied_sample;
 
    axis_fifo
      #(.WIDTH((IQ_WIDTH*4)+1),
@@ -234,9 +238,12 @@ module axis_stream_to_pkt
       .out_tready(sfifo_minimal_tready),
 
       // Unused
-      .space(),
-      .occupied()
+      .space(space_sample),
+      .occupied(occupied_sample)
       );
+   
+   // Unused
+   wire [1:0] space_sample_min, occupied_sample_min;
 
    axis_minimal_fifo
      #(.WIDTH((IQ_WIDTH*4)+1))
@@ -252,7 +259,11 @@ module axis_stream_to_pkt
       // Output AXIS bus
       .out_tdata({sfifo_tlast,sfifo_tdata}),
       .out_tvalid(sfifo_tvalid),
-      .out_tready(sfifo_tready)
+      .out_tready(sfifo_tready),
+
+      // Unused
+      .space(space_sample_min),
+      .occupied(occupied_sample_min)
       );
 
 
@@ -407,7 +418,8 @@ module axis_stream_to_pkt
    // Buffer framed packets before egress
    //
    /////////////////////////////////////////////////////////////////////////////////////////////////////
-
+   // Unused
+   wire [PACKET_FIFO_SIZE:0] space_resp, occupied_resp;
    axis_fifo
      #(
        .WIDTH(65),
@@ -428,8 +440,8 @@ module axis_stream_to_pkt
       .out_tready(out_tready),
 
       // Unused
-      .space(),
-      .occupied()
+      .space(space_resp),
+      .occupied(occupied_resp)
       );
 
    /////////////////////////////////////////////////////////////////////////////////////////////////////

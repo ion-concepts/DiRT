@@ -4,11 +4,12 @@
 // Author:  Ian Buckley, Ion Concepts LLC.
 //
 // Description:
-// Support tasks to assist simulations of AXI4 streaming interfaces
+// Interface definition of AXI4 streaming interfaces
 //
 // License: CERN-OHL-P (See LICENSE.md)
 //
 //-----------------------------------------------------------------------------
+`timescale 1ns/1ps
 
 `ifndef _AXIS_SV_
  `define _AXIS_SV_
@@ -35,7 +36,8 @@ interface axis_t
 
    modport master (output tdata, output tvalid, input tready, output tlast);
    modport slave (input tdata, input tvalid, output tready, input tlast);
-
+   modport monitor (input tdata, input tvalid, input tready, input tlast);
+                    
    //
    // Tasks for simulation use.
    //
