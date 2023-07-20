@@ -22,6 +22,8 @@
 `include "svunit_defines.svh"
 
 package drat_protocol;
+   import svunit_pkg::*;
+   
 // Make the math trivial to calculate bytes from beats.
    
 // (xsim in 2022.2 does not support 'let')
@@ -512,7 +514,7 @@ class Packet;
    endtask : copy_to_pkt
 
 
-    function bit is_same(Packet test_packet, bit use_assertion);
+    function bit is_same(Packet test_packet, bit use_assertion=1);
         //pkt_header_t test_header;
         //pkt_payload_t test_payload;
         //test_header = test_packet.get_header();
