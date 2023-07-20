@@ -1,33 +1,31 @@
 //-------------------------------------------------------------------------------
-// File:    eth_classifier_2port_unit_test.sv
+// File:    eth_classifier_2_egress_unit_test.sv
 //
 // Author:  Ian Buckley, Ion Concepts LLC
 //
 // Description:
-// 
+//
 // License: CERN-OHL-P (See LICENSE.md)
 //
 //-------------------------------------------------------------------------------
 `include "global_defs.svh"
 `include "svunit_defines.svh"
-`include "eth_classifier_2port.sv"
+`include "eth_classifier_2_egress.sv"
 
-module eth_classifier_2port_unit_test;
-   timeunit 1ns; 
+module eth_classifier_2_egress_unit_test;
+   timeunit 1ns;
    timeprecision 1ps;
    //import drat_protocol::*;
    import ethernet_protocol::*;
    import svunit_pkg::svunit_testcase;
 
-   string name = "eth_classifier_2port_ut";
+   string name = "eth_classifier_2_egress_ut";
    svunit_testcase svunit_ut;
 
    logic clk;
    logic rst;
 
-   ///IJB workaround for virtual interface issue with copy_to_pkt. Need a better solution.
-   //pkt_stream_t bug_fix_if(.clk(clk));
-   
+
    //
    // Ethernet Axis Busses
    //
@@ -56,13 +54,13 @@ module eth_classifier_2port_unit_test;
    eth_stream_t out1_axis_golden(.clk(clk));
 
 
-   
+
    //
    // CSR
    //
    logic [47:0] csr_mac;
-   logic [31:0] csr_ip;   
-   logic [15:0] csr_udp0;  
+   logic [31:0] csr_ip;
+   logic [15:0] csr_udp0;
    logic [15:0] csr_udp1;
    logic        csr_expose_drat;
    logic        csr_enable;
@@ -71,7 +69,7 @@ module eth_classifier_2port_unit_test;
    logic        enable_response0;
    logic        enable_response1;
    logic        ready_to_test;
-   
+
    // Declarations for Response Thread(s)
    logic [67:0] golden_beat0, response_beat0;
    logic        golden_tlast0, response_tlast0;
@@ -79,11 +77,11 @@ module eth_classifier_2port_unit_test;
    logic        golden_tlast1, response_tlast1;
    // Watchdog
    integer      timeout;
-   
+
    //
    //
   // EthernetPacket test_packet;
-   
+
    //
    // Generate clk
    //
@@ -96,10 +94,10 @@ module eth_classifier_2port_unit_test;
    end
 
    //===================================
-   // This is the UUT that we're 
+   // This is the UUT that we're
    // running the Unit Tests on
    //===================================
-   eth_classifier_2port eth_classifier_2port_i0
+   eth_classifier_2_egress eth_classifier_2_egress_i0
      (
       .clk(clk),
       .rst(rst),
@@ -155,7 +153,7 @@ module eth_classifier_2port_unit_test;
       );
 
    //-------------------------------------------------------------------------------
-   // Buffer output response packet streams 
+   // Buffer output response packet streams
    //-------------------------------------------------------------------------------
 
    axis_valve axis_valve_response_i0
@@ -166,7 +164,7 @@ module eth_classifier_2port_unit_test;
       .out_axis(out0_axis_pre.axis),
       .enable(enable_response0)
       );
-   
+
    axis_fifo_wrapper
      #(
        .SIZE(16)
@@ -181,7 +179,7 @@ module eth_classifier_2port_unit_test;
       .occupied()
       );
 
-  
+
    axis_valve axis_valve_response_i1
      (
       .clk(clk),
@@ -190,7 +188,7 @@ module eth_classifier_2port_unit_test;
       .out_axis(out1_axis_pre.axis),
       .enable(enable_response1)
       );
-   
+
    axis_fifo_wrapper
      #(
        .SIZE(16)
@@ -205,9 +203,9 @@ module eth_classifier_2port_unit_test;
       .occupied()
       );
    //-------------------------------------------------------------------------------
-   // Buffer golden response packet streams 
+   // Buffer golden response packet streams
    //-------------------------------------------------------------------------------
-   
+
    axis_fifo_wrapper
      #(
        .SIZE(16)
@@ -235,7 +233,7 @@ module eth_classifier_2port_unit_test;
       .space(),
       .occupied()
       );
-   
+
    //===================================
    // Build
    //===================================
@@ -255,8 +253,8 @@ module eth_classifier_2port_unit_test;
       ready_to_test <= 0;
       // Bring CSR"s to reset like values.
       csr_mac <= 0;
-      csr_ip <= 0;   
-      csr_udp0 <= 0;  
+      csr_ip <= 0;
+      csr_udp0 <= 0;
       csr_udp1 <= 0;
       csr_expose_drat <= 1'b0;
       csr_enable <= 1'b0;
@@ -270,13 +268,13 @@ module eth_classifier_2port_unit_test;
       repeat(10) @(posedge clk);
       rst <= 1'b0;
 
-      
+
 
    endtask
 
-   
+
   //===================================
-  // Here we deconstruct anything we 
+  // Here we deconstruct anything we
   // need after running the Unit Tests
   //===================================
   task teardown();
@@ -284,7 +282,7 @@ module eth_classifier_2port_unit_test;
     /* Place Teardown Code Here */
   endtask
 
-   
+
   //===================================
   // All tests are defined between the
   // SVUNIT_TESTS_BEGIN/END macros
@@ -301,7 +299,7 @@ module eth_classifier_2port_unit_test;
   `SVUNIT_TESTS_BEGIN
 
    //-------------------------------------------------------------------------------
-   // 
+   //
    //
    //-------------------------------------------------------------------------------
    `SVTEST(test_udp_port_filtering)
@@ -314,8 +312,8 @@ module eth_classifier_2port_unit_test;
          @(negedge clk);
          // Load sensible CSR values
          csr_mac <= {8'd0,8'd6,8'd7,8'd8,8'd9,8'd10};
-         csr_ip <= {8'd5,8'd6,8'd7,8'd8};   
-         csr_udp0 <= 'd10;  
+         csr_ip <= {8'd5,8'd6,8'd7,8'd8};
+         csr_udp0 <= 'd10;
          csr_udp1 <= 'd13;
          csr_expose_drat <= 1'b0;
          @(negedge clk);
@@ -328,10 +326,10 @@ module eth_classifier_2port_unit_test;
             // Packet size grows 1 octet each time.
             // Need to set TUSER bits appropriately in response to valid octets in
             // last beat like simple_gemac would
-            test_packet = UDPPacket::new(i); 
+            test_packet = UDPPacket::new(i);
             test_packet.add_payload_octet(i[7:0]);
-            test_packet.set_udp_src_port(i[15:0]+1); 
-            test_packet.set_udp_dst_port(i[15:0]); 
+            test_packet.set_udp_src_port(i[15:0]+1);
+            test_packet.set_udp_dst_port(i[15:0]);
             test_packet.set_ipv4_src_addr({8'd1,8'd2,8'd3,8'd4});
             test_packet.set_ipv4_dst_addr({8'd5,8'd6,8'd7,8'd8});
             test_packet.set_mac_src({8'd0,8'd1,8'd2,8'd3,8'd4,8'd5});
@@ -358,7 +356,7 @@ module eth_classifier_2port_unit_test;
          `INFO("test_udp_port_filtering: Stimulus Done");
          //
       end // block: load_stimulus
-      
+
       // Response thread for out0
       begin: read_response_out0
          // Wait until stimulus is loaded.
@@ -378,7 +376,7 @@ module eth_classifier_2port_unit_test;
          end // while (out0_axis_golden.axis.tvalid)
          `INFO("test_udp_port_filtering: read_response_out0 finished");
       end // block: read_response_out0
-      
+
       // Response thread for out1
       begin: read_response_out1
          // Wait until stimulus is loaded.
@@ -399,7 +397,7 @@ module eth_classifier_2port_unit_test;
          `INFO("test_udp_port_filtering: read_response_out1 finished");
          disable watchdog_thread;
       end // block: read_response_out1
-      
+
       begin : watchdog_thread
          timeout = 500000;
          while(1) begin
@@ -422,7 +420,7 @@ module eth_classifier_2port_unit_test;
        in1_axis_golden.axis.idle_master();
        out0_axis_golden.axis.idle_slave();
        out1_axis_golden.axis.idle_slave();
-       
+
     endtask // idle_all
 
-endmodule // eth_classifier_2port_unit_test
+endmodule // eth_classifier_2_egress_unit_test

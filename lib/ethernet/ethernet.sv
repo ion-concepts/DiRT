@@ -10,7 +10,7 @@
 //
 //-----------------------------------------------------------------------------
 `timescale 1ns/1ps
-  
+
 `ifndef _ETHERNET_SV_
  `define _ETHERNET_SV_
 
@@ -24,7 +24,7 @@
 
 package ethernet_protocol;
    // Make the math trivial to calculate bytes from beats.
-   
+
    // (xsim in 2022.2 does not support 'let')
    let beats_to_bytes(x) = (x)*8;
    let bytes_to_beats(x) = (((x)+7)>>3);
@@ -64,13 +64,13 @@ package ethernet_protocol;
                    TCP =  8'h06,
                    UDP =  8'h11
                  } ipv4_proto_enum_t;
-   
+
    typedef union packed
                  {
                     ipv4_proto_enum_t ipv4_proto_enum;
                     logic [7:0] ipv4_proto_raw;
                  } ipv4_proto_t;
-   
+
    typedef struct packed
                   {
                      logic [7:0] octet_a;
@@ -78,13 +78,13 @@ package ethernet_protocol;
                      logic [7:0] octet_c;
                      logic [7:0] octet_d;
                   } ipv4_octets_t;
-                     
+
    typedef union packed
                  {
                     logic [31:0] ip_addr;
                     ipv4_octets_t ip_octets;
                  } ipv4_addr_t;
-     
+
    typedef struct packed
                   {
                      logic [3:0] version;
@@ -130,7 +130,7 @@ package ethernet_protocol;
                     logic [7:0] type_raw;
                     icmp_type_enum_t type_enum;
                  } icmp_type_t;
- 
+
    typedef struct packed
                   {
                      icmp_type_t icmp_type;
@@ -147,14 +147,14 @@ package ethernet_protocol;
    // NOTE: Can't build a struct containing a pkt_header_t and pkt_payload_t because
    // its illegal to have packed structs mixed with dynamic arrays.
 
-   
+
    //-------------------------------------------------------------------------------
    //-- Given a packet header structure, expand into vectors of bits.
    //-------------------------------------------------------------------------------
    function logic [111:0] extract_eth_header (input eth_header_t header);
       return {
-              header.mac_dst, 
-              header.mac_src, 
+              header.mac_dst,
+              header.mac_src,
               header.ethertype
               };
    endfunction : extract_eth_header
@@ -196,7 +196,7 @@ class EthernetPacket;
    protected pkt_payload_t payload;
    local int          next;
 
-   
+
    // Provide explicit constructor
    function new(ethertype_enum_t ethertype = IPV4, shortint len=1);
       eth_header.mac_dst = 0;
@@ -204,24 +204,24 @@ class EthernetPacket;
       eth_header.ethertype.ethertype_enum = ethertype ;
       payload = new[len];
       next = 0;
-      
+
    endfunction // init_eth_header
-   
+
    // Set MAC DST address
    function void set_mac_dst(logic[47:0] mac_dst);
       this.eth_header.mac_dst = mac_dst;
    endfunction: set_mac_dst
-      
+
    // Returns MAC DST address
    function shortint get_mac_dst();
       return(this.eth_header.mac_dst);
    endfunction : get_mac_dst
- 
+
   // Set MAC SRC address
    function void set_mac_src(logic[47:0] mac_src);
       this.eth_header.mac_src = mac_src;
    endfunction: set_mac_src
-      
+
    // Returns MAC SRC address
    function shortint get_mac_src();
       return(this.eth_header.mac_src);
@@ -231,7 +231,7 @@ class EthernetPacket;
    function void set_ethertype(ethertype_enum_t ethertype);
       this.eth_header.ethertype = ethertype;
    endfunction: set_ethertype
-      
+
    // Returns MAC SRC address
    function shortint get_ethertype();
       return(this.eth_header.ethertype);
@@ -241,12 +241,12 @@ class EthernetPacket;
    //-- Generic payload manipulation for all packet types
    //-- assumes octet quanta
    //-----------------------------------------------------
-   
+
    // Return packet payload to minimal initialized state.
    function void reset_payload(shortint len=1);
       this.payload=new[len];
    endfunction : reset_payload
-   
+
    // Return entire payload as array
    function pkt_payload_t get_payload();
       return(this.payload);
@@ -286,15 +286,15 @@ class EthernetPacket;
 
 
    // TODO: Solve CRC creation. Might need to be part of super class since this class can not see full packet.
-   
+
 endclass : EthernetPacket
- 
+
    //
    // Generic IPv4 Packet type.
    // Provides general packet manipulation and low level test functions.
    // Inherits EthernetPacket as a base class.
    // Designed for inhertance to support specific packet formats.
-   //  
+   //
 
 class IPv4Packet extends EthernetPacket;
   protected ipv4_header_t ipv4_header;
@@ -321,7 +321,7 @@ class IPv4Packet extends EthernetPacket;
    function void set_ipv4_length(shortint length);
       this.ipv4_header.length = length;
    endfunction: set_ipv4_length
-      
+
    // Returns confgured length of packet (in bytes)
    function shortint get_ipv4_length();
       return(this.ipv4_header.length);
@@ -331,7 +331,7 @@ class IPv4Packet extends EthernetPacket;
    function void set_ipv4_ttl(shortint ttl);
       this.ipv4_header.ttl = ttl;
    endfunction: set_ipv4_ttl
-      
+
    // Returns confgured ttl of packet
    function shortint get_ipv4_ttl();
       return(this.ipv4_header.ttl);
@@ -341,7 +341,7 @@ class IPv4Packet extends EthernetPacket;
    function void set_ipv4_src_addr(logic[31:0] src_addr);
       this.ipv4_header.src_addr.ip_addr = src_addr;
    endfunction: set_ipv4_src_addr
-      
+
    // Returns confgured src_addr of packet
    function shortint get_ipv4_src_addr();
       return(this.ipv4_header.src_addr.ip_addr);
@@ -351,7 +351,7 @@ class IPv4Packet extends EthernetPacket;
    function void set_ipv4_dst_addr(logic[31:0] dst_addr);
       this.ipv4_header.dst_addr.ip_addr = dst_addr;
    endfunction: set_ipv4_dst_addr
-      
+
    // Returns confgured dst_addr of packet
    function shortint get_ipv4_dst_addr();
       return(this.ipv4_header.dst_addr.ip_addr);
@@ -362,15 +362,15 @@ class IPv4Packet extends EthernetPacket;
       super.add_payload_octet(octet);
       ipv4_header.length = ipv4_header.length + 1;
    endfunction : add_payload_octet
-   
+
    // TODO: Calculate IPv4 header checksum
-   
+
 endclass : IPv4Packet
-   
+
 class UDPPacket extends IPv4Packet;
    protected udp_header_t udp_header;
- 
-   
+
+
    // Provide explicit constructor
    function new(shortint len=1);
       super.new(UDP,len);
@@ -384,7 +384,7 @@ class UDPPacket extends IPv4Packet;
    function void set_udp_src_port(logic[15:0] src_port);
       this.udp_header.src_port = src_port;
    endfunction: set_udp_src_port
-      
+
    // Returns confgured UDP src_port of packet
    function shortint get_udp_src_port();
       return(this.udp_header.src_port);
@@ -394,17 +394,17 @@ class UDPPacket extends IPv4Packet;
    function void set_udp_dst_port(logic[15:0] dst_port);
       this.udp_header.dst_port = dst_port;
    endfunction: set_udp_dst_port
-      
+
    // Returns confgured UDP dst_port of packet
    function shortint get_udp_dst_port();
       return(this.udp_header.dst_port);
    endfunction : get_udp_dst_port
-      
+
    // Set length of Udp packet (in bytes)
    function void set_udp_length(shortint length);
       this.udp_header.length = length;
    endfunction: set_udp_length
-      
+
    // Returns confgured length of packet (in bytes)
    function shortint get_udp_length();
       return(this.udp_header.length);
@@ -420,7 +420,7 @@ class UDPPacket extends IPv4Packet;
    // This includes the 4 TUSER bits to support octet sized bursts and an error flag.
    task send_udp_to_eth_stream(virtual interface eth_stream_t axis_bus, bit use_assertion=1);
       integer payload_len;
-      logic [67:0] beat;  
+      logic [67:0] beat;
       axis_bus.push_beat({4'h0,48'h0,this.eth_header[111:96]},0);
       axis_bus.push_beat({4'h0,this.eth_header[95:32]},0);
       axis_bus.push_beat({4'h0,this.eth_header[31:0],ipv4_header[159:128]},0);
@@ -433,7 +433,7 @@ class UDPPacket extends IPv4Packet;
          assert(payload_len==this.get_payload_length());
       end else begin
          $display("ERROR: UDP payload length missmatch");
-      end          
+      end
       this.rewind_payload();
       // Iterate over whole beats.
       while (payload_len > 8) begin
@@ -453,15 +453,15 @@ class UDPPacket extends IPv4Packet;
       beat[67] = 0; // Error not set.
       axis_bus.push_beat(beat,1);
     endtask // send_udp_to_eth_stream
-  
-   
+
+
 
 endclass : UDPPacket
 
 
 class ICMPPacket extends IPv4Packet;
    protected icmp_header_t icmp_header;
-   
+
 
    // Provide explicit constructor
    function new(shortint len=1);
@@ -476,7 +476,7 @@ class ICMPPacket extends IPv4Packet;
    function void set_icmp_type(icmp_type_enum_t icmp_type);
       this.icmp_header.icmp_type.type_enum = icmp_type;
    endfunction: set_icmp_type
-      
+
    // Returns ICMP type (enum)
    function shortint get_icmp_type();
       return(this.icmp_header.icmp_type.type_enum);
@@ -486,7 +486,7 @@ class ICMPPacket extends IPv4Packet;
    function void set_icmp_code(logic[7:0] code);
       this.icmp_header.code = code;
    endfunction: set_icmp_code
-      
+
    // Returns ICMP code
    function shortint get_icmp_code();
       return(this.icmp_header.code);
@@ -496,7 +496,7 @@ class ICMPPacket extends IPv4Packet;
    function void set_icmp_identifier(logic[15:0] identifier);
       this.icmp_header.identifier = identifier;
    endfunction: set_icmp_identifier
-      
+
    // Returns ICMP identifier
    function shortint get_icmp_identifier();
       return(this.icmp_header.identifier);
@@ -506,7 +506,7 @@ class ICMPPacket extends IPv4Packet;
    function void set_icmp_seq_num(logic[15:0] seq_num);
       this.icmp_header.seq_num = seq_num;
    endfunction: set_icmp_seq_num
-      
+
    // Returns ICMP seq_num
    function shortint get_icmp_seq_num();
       return(this.icmp_header.seq_num);
@@ -516,29 +516,29 @@ class ICMPPacket extends IPv4Packet;
    function void set_icmp_checksum(logic[15:0] checksum);
       this.icmp_header.checksum = checksum;
    endfunction: set_icmp_checksum
-      
+
    // Returns ICMP checksum
    function shortint get_icmp_checksum();
       return(this.icmp_header.checksum);
    endfunction : get_icmp_checksum
 
-   // Pass down octet postpend to super clas
+   // Pass down octet postpend to super class
    function void add_payload_octet(bit [7:0] octet);
       super.add_payload_octet(octet);
    endfunction : add_payload_octet
 
 endclass : ICMPPacket
 endpackage // ethernet_protocol
-   
-     
-   
+
+
+
 //-------------------------------------------------------------------------------
 //-- Inherit basic AXIS interface into ethernet aware interface
 //-- Interface includes:
 //--   64b data path for ethernet encapsulated packets.
 //--   4b flags (per beat that are only valid for the last beat in a packet
 //--   flag[2:0] encode the number of valid octets in the last beat, where 3'b0 = 8 octets
-//--   flag[3] indicates an error in the packet and all proceding beats should be discarded. 
+//--   flag[3] indicates an error in the packet and all proceding beats should be discarded.
 //--   flag[3] may be set in lieu of an asserted TLAST or both may be asserted.
 //-- flags are nominally TUSER bits but are concatonated as TDATA[67:64] for ease of use with axis_t
 //-------------------------------------------------------------------------------
@@ -546,15 +546,15 @@ interface eth_stream_t (input clk);
    import ethernet_protocol::*;
    axis_t #(.WIDTH(68)) axis (.clk(clk));
 
- /*  
+ /*
    //
    // Push ethernet packet Headers onto packet stream
    //
    task automatic push_eth_header;
       input eth_header_t header;
       axis.write_beat(extract_eth_beat1(header),0);
-      
-   
+
+
    //
    // Push UDP packet Headers onto packet stream
    //
@@ -565,7 +565,7 @@ interface eth_stream_t (input clk);
       // at 64b beat.
       axis.write_beat({48'h000000000000,header
       for (integer i=0; i < ; i++) begin
-      
+
       axis.write_beat(extract_beat1(header),0);
       axis.write_beat(extract_beat2(header),0);
       axis.write_beat(extract_beat3(header),0);
@@ -610,7 +610,7 @@ endinterface // eth_stream_t
 //
 interface gmii_t
    #(parameter WIDTH = 8);
-   
+
    logic             txclk;
    logic [WIDTH-1:0] txd;
    logic             txen;
@@ -633,7 +633,7 @@ interface gmii_t
    modport monitor (input txclk, input txd, input txen, input txer,
                 input rxclk, input rxd, input rxdv,
                 input rxer, input col, input cs);
-  
+
 endinterface : gmii_t
 
 
@@ -645,7 +645,7 @@ endinterface : gmii_t
 // control line that can be used to control a driver to make a PCB tristate bus.
 //
 interface mdio_t;
-   
+
    logic mdc;
    logic mdi;
    logic mdo;
@@ -654,9 +654,9 @@ interface mdio_t;
    modport mac (output mdc, output mdo, input mdi, output mdt);
    modport phy (input mdc, input mdo, output mdi, input mdt);
    modport monitor (input mdc, input mdo, input mdi, input mdt);
-   
 
- 
+
+
 endinterface : mdio_t
 
 
