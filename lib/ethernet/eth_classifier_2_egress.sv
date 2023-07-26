@@ -7,6 +7,8 @@
 // Deep packet inspection of ingressing ethernet frames on a 64bit AXIS bus
 // Output switched between 2 egress ports.
 // Can optionally strip L1-4 protocols for Egress port out1
+// Port out1 will alway include tuser bits embedded in tdata even if DRaT format.
+// These can be discarded for DRaT packets.
 //
 // License: CERN-OHL-P (See LICENSE.md)
 //

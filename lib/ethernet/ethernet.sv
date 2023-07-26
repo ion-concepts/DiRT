@@ -622,11 +622,12 @@ interface gmii_t
    logic             col;
    logic             cs;
 
-   modport mac (output txclk, output txd, output txen, output txer,
+   // NOTE: tx_clk follows MII style direction to maych Xilinx PCS/PMA
+   modport mac (input txclk, output txd, output txen, output txer,
                 input rxclk, input rxd, input rxdv,
                 input rxer, input col, input cs);
 
-   modport phy (input txclk, input txd, input txen, input txer,
+   modport phy (output txclk, input txd, input txen, input txer,
                 output rxclk, output rxd, output rxdv,
                 output rxer, output col, output cs);
 
@@ -652,7 +653,7 @@ interface mdio_t;
    logic mdt;
 
    modport mac (output mdc, output mdo, input mdi, output mdt);
-   modport phy (input mdc, input mdo, output mdi, input mdt);
+   modport phy (input mdc, input mdo, output mdi, output mdt);
    modport monitor (input mdc, input mdo, input mdi, input mdt);
 
 
