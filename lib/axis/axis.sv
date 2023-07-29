@@ -114,6 +114,8 @@ interface axis_t
 
    // Assertions for generic AXIS bus faults.
    //
+   /* Commented because it causes confusing verbosity with FIFO's
+    who's core RAM can not be reset in simulation
    always_ff @(negedge clk) begin
       assertDataUnknown: assert property (
                                           disable iff(!has_checks)
@@ -127,7 +129,7 @@ interface axis_t
         else
           $error("ERR_AXIS_LASTXZ\n tlast went to X or Z during bus beat");
    end // always_ff @ (negedge clk)
-
+    */
 
 endinterface : axis_t
 
