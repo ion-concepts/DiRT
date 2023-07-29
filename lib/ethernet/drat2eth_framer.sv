@@ -10,7 +10,7 @@
 //-----------------------------------------------------------------------------
 `include "global_defs.svh"
 `include "ethernet.sv"
-
+`include "drat_protocol.sv"
 
 module drat2eth_framer
   (
@@ -93,7 +93,7 @@ module drat2eth_framer
                 // Wait for the next DRaT packet to be valid
                 if (csr_enable && in_axis.tvalid) begin
                    // Grab DRaT header
-                   drat_header <= dirt_protocol::populate_header_no_timestamp(drat_in_axis.tdata);
+                   drat_header <= drat_protocol::populate_header_no_timestamp(drat_in_axis.tdata);
                    state <= S_HEADER1;                 
                 end
                 csr_idle <= ~csr_enable;               

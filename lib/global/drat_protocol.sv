@@ -1,5 +1,5 @@
 //-------------------------------------------------------------------------------
-// File:    protocol.sv
+// File:    drat_protocol.sv
 //
 // Author:  Ian Buckley, Ion Concepts LLC
 //
@@ -10,8 +10,8 @@
 //
 //-------------------------------------------------------------------------------
 
-`ifndef _PROTOCOL_SV_
- `define _PROTOCOL_SV_
+`ifndef _DRAT_PROTOCOL_SV_
+ `define _DRAT_PROTOCOL_SV_
 
 // Pull in AXI Streaming libarary.
 `ifndef _AXIS_SV_
@@ -623,5 +623,5 @@ interface pkt_stream_t (input clk);
 
 
 endinterface // pkt_stream_t
-`endif //  `ifndef _PROTOCOL_SV_
+`endif //  `ifndef _DRAT_PROTOCOL_SV_
    
