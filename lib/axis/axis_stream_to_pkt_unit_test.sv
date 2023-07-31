@@ -75,7 +75,7 @@ module axis_stream_to_pkt_unit_test;
    logic 	load_tready;
    logic 	load_tvalid;
 
-   Packet test_packets[];
+   DRaTPacket test_packets[];
 
 
 

@@ -62,7 +62,7 @@ module axis_stream_to_pkt_backpressured_unit_test;
    logic        enable_response;
    logic        ready_to_test;
    // Declarations for Response Thread(s)
-   Packet golden_packet, response_packet;
+   DRaTPacket golden_packet, response_packet;
    // Watchdog
    int 		timeout;
    

@@ -270,11 +270,11 @@ endclass : RandomPayload
  -----/\----- EXCLUDED -----/\----- */
 
 //
-// Generic Packet type.
+// Generic DRaT Packet type.
 // Provides general packet manipulation and low level test functions.
 // Designed for inhertance to support specific packet formats.
 //
-class Packet;
+class DRaTPacket;
    protected pkt_header_t header;
    protected pkt_payload_t payload;
    local int next;
@@ -514,7 +514,7 @@ class Packet;
    endtask : copy_to_pkt
 
 
-    function bit is_same(Packet test_packet, bit use_assertion=1);
+    function bit is_same(DRaTPacket test_packet, bit use_assertion=1);
         //pkt_header_t test_header;
         //pkt_payload_t test_payload;
         //test_header = test_packet.get_header();
@@ -529,7 +529,7 @@ class Packet;
         end
     endfunction: is_same
 
-endclass : Packet
+endclass : DRaTPacket
 
 endpackage
 
@@ -581,7 +581,7 @@ interface pkt_stream_t (input clk);
     // Push full DRaT packet onto Packet bus.
     //
     task automatic push_pkt;
-        ref Packet packet;
+        ref DRaTPacket packet;
         axis.write_beat(packet.get_raw_header(),0);
         axis.write_beat(packet.get_timestamp(),0);
         packet.rewind_payload();
@@ -596,7 +596,7 @@ interface pkt_stream_t (input clk);
     // Pop full DRaT packet off a packet bus
     //
     task automatic pop_pkt;
-        ref Packet packet;
+        ref DRaTPacket packet;
         logic [63:0] beat;
         logic        last;
 

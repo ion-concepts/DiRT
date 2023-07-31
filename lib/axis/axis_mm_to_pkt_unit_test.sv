@@ -60,7 +60,7 @@ module axis_mm_to_pkt_unit_test;
 
    logic        ready_to_test;
 
-   Packet test_packets[];
+   DRaTPacket test_packets[];
 
 
 

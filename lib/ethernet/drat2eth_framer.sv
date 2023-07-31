@@ -31,10 +31,7 @@ module drat2eth_framer
    input logic [15:0] csr_udp_dst4,
    input logic [15:0] csr_udp_src4,   
    input logic        csr_enable,
-   output logic       csr_idle,
-                      
-                      
-                      
+   output logic       csr_idle, 
    // DRaT protocol input bus (64b TDATA)
    axis_t.slave in_axis,
    // Ethernet/IPv4/UDP encapsulated output bus (68b TDATA)
@@ -93,7 +90,7 @@ module drat2eth_framer
                 // Wait for the next DRaT packet to be valid
                 if (csr_enable && in_axis.tvalid) begin
                    // Grab DRaT header
-                   drat_header <= drat_protocol::populate_header_no_timestamp(drat_in_axis.tdata);
+                   drat_header <= drat_protocol::populate_header_no_timestamp(in_axis.tdata);
                    state <= S_HEADER1;                 
                 end
                 csr_idle <= ~csr_enable;               
@@ -126,11 +123,11 @@ module drat2eth_framer
              //
              S_HEADER6: begin 
                if (out_axis.tready == 1)
-	          state <= S_HEADER7;
+	          state <= S_PAYLOAD;
              end
              //
              S_PAYLOAD: begin
-                if ((in_axis.tvalid == 1) && (out_axis.tready == 1) && (in_tlast == 1))
+                if ((in_axis.tvalid == 1) && (out_axis.tready == 1) && (in_axis.tlast == 1))
 	            state <= S_IDLE;
              end
              // Should never get to default
@@ -176,18 +173,14 @@ module drat2eth_framer
    always_comb begin
       in_axis.tready = (state == S_PAYLOAD) ? out_axis.tready : 1'b0;
       out_axis.tlast = (state == S_PAYLOAD) ? in_axis.tlast : 1'b0;
-      out_axis.tdata[67:64] = ((state == S_PAYLOAD) & in_axis.tlast) ? {1'b0,vita_len[0],2'b00} : 4'b0000; // IJB. Think about this more
+      out_axis.tdata[67:64] = ((state == S_PAYLOAD) & in_axis.tlast) ? {1'b0,drat_header.length[2:0]} : 4'b0000; // IJB. Think about this more
    end
-
-   ip_hdr_checksum ip_hdr_checksum
-     (.clk(clk), .in({misc_ip,ip_len,ident,flag_frag,ttl_prot,16'd0,ip_src,ip_dst}),
-      .out(iphdr_checksum));
 
    // Abreviated IPv4 header checksum calc because many fields are constant or pre-programmed.
    // Gate updates with state to capture correct IPv4 length value.
    always_ff @(posedge clk) begin
       if (state == S_HEADER1) 
-        checksum_ipaddr <= csr_ip_src[15:0] +  csr_ip_dst[15:0] + csr_ip_src[31:16] +  csr_ip_dst[31:16] + C_PRECALC_CHECKSUM;
+        checksum_ipaddr <= csr_ipv4_src[15:0] +  csr_ipv4_dst[15:0] + csr_ipv4_src[31:16] +  csr_ipv4_dst[31:16] + C_PRECALC_CHECKSUM;
       if (state == S_HEADER2) 
         ipv4_checksum <= ~(checksum_ipaddr_plus_len[15:0] + checksum_ipaddr_plus_len[18:16]);
    end
@@ -202,8 +195,8 @@ module drat2eth_framer
         S_HEADER1 : out_axis.tdata[63:0] <= { 48'h0, csr_mac_dst[47:32]};
         S_HEADER2 : out_axis.tdata[63:0] <= { csr_mac_dst[31:0], csr_mac_src[47:16]};
         S_HEADER3 : out_axis.tdata[63:0] <= { csr_mac_src[15:0], C_ETHERTYPE, C_VERSION, C_IHL, calc_length };
-        S_HEADER4 : out_axis.tdata[63:0] <= { C_IDENTIFICATION , C_FLAGS, C_FRAGMENT_OFFSET, C_TIME_TO_LIVE, C_PROTOCOL, ipv4_checksum;
-        S_HEADER5 : out_axis.tdata[63:0] <= { csr_ip_src, csr_ip_dst};
+        S_HEADER4 : out_axis.tdata[63:0] <= { C_IDENTIFICATION , C_FLAGS, C_FRAGMENT_OFFSET, C_TIME_TO_LIVE, C_PROTOCOL, ipv4_checksum};
+        S_HEADER5 : out_axis.tdata[63:0] <= { csr_ipv4_src, csr_ipv4_dst};
         S_HEADER6 : out_axis.tdata[63:0] <= { udp_src, udp_dst, calc_length, C_UDP_CHECKSUM};
         default : out_axis.tdata[63:0] <= in_axis.tdata[63:0]; // Pass through payload.
       endcase // case (state)
