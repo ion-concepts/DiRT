@@ -96,11 +96,15 @@ typedef enum logic [31:0]
    LATE=32'h10
    } status_type_t;
 
-// addresses of flow src/sinks
+// enumerated addresses of flow src/sinks for test bench readability
 typedef enum logic [15:0]
              {
               INPUT,
-	      OUTPUT
+	      OUTPUT,
+              OUTPUT1,
+              OUTPUT2,
+              OUTPUT3,
+              OUTPUT4
               } node_addr_t;
 
 
@@ -280,14 +284,19 @@ class DRaTPacket;
    local int next;
    local logic [15:0] count;
 
-
    // Provide explicit initialization
-   function void init;
+   function new;
       header.packet_type = INT16_COMPLEX;
       header.seq_id = 0;
       header.length = 8; // Illegal as-is, needs non zero payload.
       header.flow_id.flow_id = 0;
       header.timestamp = 0;
+   endfunction : new
+
+
+   // Provide explicit initialization
+   function void init;
+     this.header.new
    endfunction : init
 
    // Return packet payload to minimal initialized state.

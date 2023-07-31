@@ -198,6 +198,7 @@ class EthernetPacket;
 
 
    // Provide explicit constructor
+   // len: Size of ultimate payload in octets (NOT including any other encapsulated protocol headers)
    function new(ethertype_enum_t ethertype = IPV4, shortint len=1);
       eth_header.mac_dst = 0;
       eth_header.mac_src = 0;
@@ -265,13 +266,20 @@ class EthernetPacket;
       next = next + 1;
    endfunction : set_payload_octet
 
+   // Populate 8 consectutive payload octets
+   function void set_payload_8octets(bit [63:0] beat);
+      for (integer i = 0; i < 8; i++) begin
+         set_payload_octet(beat[(i*8)+7:(i*8)]);
+      end
+   endfunction : set_payload_8octets
+
    // Return next payload beat
    function bit [7:0] get_payload_octet();
       next = next + 1;
       return(this.payload[next-1]);
    endfunction : get_payload_octet
 
-   // Add beat to end of packet without being protocol aware.
+   // Add octet to end of packet without being protocol aware.
    // Allocate additional storage.
    // (i.e we don't look at or change the header)
    function void add_payload_octet(bit [7:0] octet);
@@ -300,6 +308,7 @@ class IPv4Packet extends EthernetPacket;
   protected ipv4_header_t ipv4_header;
 
    // Provide explicit constructor
+   // len: Size of ultimate payload in octets (NOT including any other encapsulated protocol headers)
    function new(ipv4_proto_enum_t ipv4_proto_enum = UDP, shortint len=1);
       super.new(IPV4,len);
       ipv4_header.version = 4;
@@ -317,6 +326,10 @@ class IPv4Packet extends EthernetPacket;
       ipv4_header.dst_addr.ip_addr = {8'd0,8'd0,8'd0,8'd0};
    endfunction // init_ipv4_header
 
+   // Returns size of a IPv4 header in octets
+   function ipv4_header_size();
+      return('d24);
+      
    // Set length of IPv4 packet (in bytes)
    function void set_ipv4_length(shortint length);
       this.ipv4_header.length = length;
@@ -367,11 +380,12 @@ class IPv4Packet extends EthernetPacket;
 
 endclass : IPv4Packet
 
+
 class UDPPacket extends IPv4Packet;
    protected udp_header_t udp_header;
 
-
    // Provide explicit constructor
+   // len: Size of ultimate payload in octets (NOT including any other encapsulated protocol headers)
    function new(shortint len=1);
       super.new(UDP,len);
       udp_header.src_port = 0;
@@ -379,6 +393,10 @@ class UDPPacket extends IPv4Packet;
       udp_header.length = 8 + len;
       udp_header.checksum = 0; // 0 checksum is legal if unused
    endfunction // init_udp_header
+
+   // Returns size of a UDP header in octets
+   function udp_header_size();
+      return('d8);
 
    // Set src_port of UDP packet
    function void set_udp_src_port(logic[15:0] src_port);
