@@ -329,6 +329,7 @@ class IPv4Packet extends EthernetPacket;
    // Returns size of a IPv4 header in octets
    function ipv4_header_size();
       return('d24);
+   endfunction: ipv4_header_size
       
    // Set length of IPv4 packet (in bytes)
    function void set_ipv4_length(shortint length);
@@ -397,7 +398,8 @@ class UDPPacket extends IPv4Packet;
    // Returns size of a UDP header in octets
    function udp_header_size();
       return('d8);
-
+   endfunction: udp_header_size
+   
    // Set src_port of UDP packet
    function void set_udp_src_port(logic[15:0] src_port);
       this.udp_header.src_port = src_port;
