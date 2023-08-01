@@ -99,21 +99,26 @@ typedef enum logic [31:0]
 // enumerated addresses of flow src/sinks for test bench readability
 typedef enum logic [15:0]
              {
-              INPUT,
-	      OUTPUT,
-              OUTPUT1,
-              OUTPUT2,
-              OUTPUT3,
-              OUTPUT4
-              } node_addr_t;
-
-
+              SRC0,
+              SRC1,
+              SRC2,
+              SRC3
+              } node_src_addr_t;
+   
+// enumerated addresses of flow src/sinks for test bench readability
+typedef enum logic [15:0]
+             {
+              DST0,
+              DST1,
+              DST2,
+              DST3
+              } node_dst_addr_t;
 
 // Define a source / dest pairing of addresses to define a flow.
 typedef struct packed
                {
-                  node_addr_t flow_src;
-                  node_addr_t flow_dst;
+                  node_src_addr_t flow_src;
+                  node_dst_addr_t flow_dst;
                } flow_addr_t;
 
 // flow_id can be thought of as a unique identifier for the flow
@@ -286,17 +291,16 @@ class DRaTPacket;
 
    // Provide explicit initialization
    function new;
+      this.init;
+   endfunction : new
+
+   // Provide explicit initialization
+   function void init;
       header.packet_type = INT16_COMPLEX;
       header.seq_id = 0;
       header.length = 8; // Illegal as-is, needs non zero payload.
       header.flow_id.flow_id = 0;
       header.timestamp = 0;
-   endfunction : new
-
-
-   // Provide explicit initialization
-   function void init;
-     this.header.new
    endfunction : init
 
    // Return packet payload to minimal initialized state.
@@ -340,12 +344,12 @@ class DRaTPacket;
    endfunction : get_flow_id
 
    // Set Source of this packet
-   function void set_flow_src(node_addr_t node_addr);
+   function void set_flow_src(node_src_addr_t node_addr);
       this.header.flow_id.flow_addr.flow_src = node_addr;
    endfunction : set_flow_src
 
    // Set Destination of this packet
-   function void set_flow_dst(node_addr_t node_addr);
+   function void set_flow_dst(node_dst_addr_t node_addr);
       this.header.flow_id.flow_addr.flow_dst = node_addr;
    endfunction : set_flow_dst
 

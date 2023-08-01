@@ -235,8 +235,8 @@ module axis_mm_to_pkt_unit_test;
          // Allocate packet and Initialize header: INT16_COMPLEX
          test_packets[0] = new;
          test_packets[0].init;
-         test_packets[0].set_flow_src(INPUT);
-         test_packets[0].set_flow_dst(OUTPUT);
+         test_packets[0].set_flow_src(SRC0);
+         test_packets[0].set_flow_dst(DST1);
          // Unsigned value constrained between min packet size and buffer size.
          // (whole number of beats converted to bytes)
          test_packets[packet_count_in].set_length (beats_to_bytes({$random} % (space-3) + 3));

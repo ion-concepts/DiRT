@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------------
-// File:    eth_router_2_port.sv
+// File:    drat2eth_framer.sv
 //
 // Author:  Ian Buckley, Ion Concepts LLC.
 //
@@ -51,7 +51,7 @@ module drat2eth_framer
    localparam logic [7:0]  C_PROTOCOL = 8'd17;       // UDP
    localparam logic [15:0] C_UDP_CHECKSUM = 16'd0;   // UDP checksum dissabled.
    // Precalculate constant parts of IPv4 header checksum
-   localparam logic [17:0] C_PRECALC_CHECKSUM = {C_ETHERTYPE, C_VERSION, C_IHL} + {C_FLAGS, C_FRAGMENT_OFFSET} + {C_TIME_TO_LIVE, C_PROTOCOL};
+   localparam logic [17:0] C_PRECALC_CHECKSUM = {C_VERSION, C_IHL, C_DSCP_ECN} + {C_FLAGS, C_FRAGMENT_OFFSET} + {C_TIME_TO_LIVE, C_PROTOCOL};
    
    
    drat_protocol::pkt_header_t drat_header;
@@ -59,6 +59,7 @@ module drat2eth_framer
    logic [15:0]            udp_src, udp_dst;
    logic [18:0]            checksum_ipaddr;
    logic [18:0]            checksum_ipaddr_plus_len;
+   logic [16:0]            checksum_pre;
    logic [15:0]            ipv4_checksum;
 
    
@@ -81,7 +82,6 @@ module drat2eth_framer
         if (rst) begin
            state <= S_IDLE;
            drat_header <= '0;
-           out_axis.tvalid <= 1'b0;
            out_axis.tlast <= 1'b0;
         end else begin
            case (state)
@@ -141,8 +141,12 @@ module drat2eth_framer
 
    // Recaclulate IPv4 and UDP packet lengths on the fly to re-use one adder and register.
    always_ff @(posedge clk) begin
-      if ((state == S_HEADER1) || (state == S_HEADER4)) begin
-         calc_length <= drat_header.length + (state == S_HEADER1) ? 16'd28 : 16'd8;
+      if (rst) begin
+         calc_length <= 16'h0;
+      end else if (state == S_HEADER1) begin
+         calc_length <= drat_header.length + 16'd28;
+      end else if (state == S_HEADER4) begin
+         calc_length <= drat_header.length + 16'd8;
       end
    end
 
@@ -153,18 +157,18 @@ module drat2eth_framer
            udp_src = csr_udp_src1;
            udp_dst = csr_udp_dst1;
         end
-          1:begin
+        1:begin
            udp_src = csr_udp_src2;
            udp_dst = csr_udp_dst2;
         end
-          2:begin
+        2:begin
            udp_src = csr_udp_src3;
            udp_dst = csr_udp_dst3;
         end
-            3:begin
+        3:begin
            udp_src = csr_udp_src4;
            udp_dst = csr_udp_dst4;
-            end
+        end
       endcase // case (drat_header.flow_id[1:0])
    end // always_comb
    
@@ -172,29 +176,35 @@ module drat2eth_framer
    // AXIS handshaking
    always_comb begin
       in_axis.tready = (state == S_PAYLOAD) ? out_axis.tready : 1'b0;
+      out_axis.tvalid = (state == S_PAYLOAD) ? in_axis.tvalid :  (state == S_IDLE) ? 1'b0 : 1'b1; // Async timing path through block.
       out_axis.tlast = (state == S_PAYLOAD) ? in_axis.tlast : 1'b0;
       out_axis.tdata[67:64] = ((state == S_PAYLOAD) & in_axis.tlast) ? {1'b0,drat_header.length[2:0]} : 4'b0000; // IJB. Think about this more
    end
 
    // Abreviated IPv4 header checksum calc because many fields are constant or pre-programmed.
-   // Gate updates with state to capture correct IPv4 length value.
+   // Gate updates with state to capture correct IPv4 length value, fold in carrys out the MSBs, and pipeline for clock speed.
    always_ff @(posedge clk) begin
       if (state == S_HEADER1) 
-        checksum_ipaddr <= csr_ipv4_src[15:0] +  csr_ipv4_dst[15:0] + csr_ipv4_src[31:16] +  csr_ipv4_dst[31:16] + C_PRECALC_CHECKSUM;
+        checksum_ipaddr[18:0] <= csr_ipv4_src[15:0] +  csr_ipv4_dst[15:0] + csr_ipv4_src[31:16] +  csr_ipv4_dst[31:16] + C_PRECALC_CHECKSUM;
+      // Add in packet length then fold in 3 bits of carry
       if (state == S_HEADER2) 
-        ipv4_checksum <= ~(checksum_ipaddr_plus_len[15:0] + checksum_ipaddr_plus_len[18:16]);
-   end
-    
-   always_comb begin
-      checksum_ipaddr_plus_len = checksum_ipaddr + calc_length;
+        checksum_pre[16:0] <= ~(checksum_ipaddr_plus_len[15:0] + checksum_ipaddr_plus_len[18:16]);
+      // Possibility of one more carry bit that needs to fold in
+      if (state == S_HEADER3)
+        ipv4_checksum[15:0] <= checksum_pre[15:0] + checksum_pre[0];
    end
 
-   // Mux TDATA source for egress to inject header fileds before payload beats.
+   // Enough remaining dynamic range in checksum_ipaddr to add in another 16 bits without generating a carry into [19]
+   always_comb begin
+      checksum_ipaddr_plus_len[18:0] = checksum_ipaddr[18:0] + calc_length[15:0];
+   end
+
+   // Mux TDATA source for egress to inject header fields before payload beats.
    always_comb begin
       case(state)
         S_HEADER1 : out_axis.tdata[63:0] <= { 48'h0, csr_mac_dst[47:32]};
         S_HEADER2 : out_axis.tdata[63:0] <= { csr_mac_dst[31:0], csr_mac_src[47:16]};
-        S_HEADER3 : out_axis.tdata[63:0] <= { csr_mac_src[15:0], C_ETHERTYPE, C_VERSION, C_IHL, calc_length };
+        S_HEADER3 : out_axis.tdata[63:0] <= { csr_mac_src[15:0], C_ETHERTYPE, C_VERSION, C_IHL, C_DSCP_ECN, calc_length };
         S_HEADER4 : out_axis.tdata[63:0] <= { C_IDENTIFICATION , C_FLAGS, C_FRAGMENT_OFFSET, C_TIME_TO_LIVE, C_PROTOCOL, ipv4_checksum};
         S_HEADER5 : out_axis.tdata[63:0] <= { csr_ipv4_src, csr_ipv4_dst};
         S_HEADER6 : out_axis.tdata[63:0] <= { udp_src, udp_dst, calc_length, C_UDP_CHECKSUM};

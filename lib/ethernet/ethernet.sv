@@ -255,7 +255,7 @@ class EthernetPacket;
 
    // Return size of alocated payload array
    function shortint get_payload_length();
-      return(this.payload.size);
+      return(this.payload.size());
    endfunction : get_payload_length
 
    // Packets payload is already allocated.
@@ -268,9 +268,14 @@ class EthernetPacket;
 
    // Populate 8 consectutive payload octets
    function void set_payload_8octets(bit [63:0] beat);
-      for (integer i = 0; i < 8; i++) begin
-         set_payload_octet(beat[(i*8)+7:(i*8)]);
-      end
+      set_payload_octet(beat[63:56]);
+      set_payload_octet(beat[55:48]);
+      set_payload_octet(beat[47:40]);
+      set_payload_octet(beat[39:32]);
+      set_payload_octet(beat[31:24]);
+      set_payload_octet(beat[23:16]);
+      set_payload_octet(beat[15:8]);
+      set_payload_octet(beat[7:0]);
    endfunction : set_payload_8octets
 
    // Return next payload beat
@@ -315,11 +320,16 @@ class IPv4Packet extends EthernetPacket;
       ipv4_header.ihl = 5;
       ipv4_header.dscp = 0;
       ipv4_header.ecn = 0;
-      ipv4_header.length = 20; // IPv4 Header length (no options)
+      case(ipv4_proto_enum)
+        UDP: ipv4_header.length = 20+8+len;
+        ICMP: ipv4_header.length = 20+8+len;
+        IGMP: assert(0); // Need to finish support
+        TCP: assert(0); // Need to finish support
+      endcase
       ipv4_header.identification = 0;
       ipv4_header.flags = 3'b010;
       ipv4_header.fragment = 0;
-      ipv4_header.ttl = 255;
+      ipv4_header.ttl = 8'h10;
       ipv4_header.protocol.ipv4_proto_enum = ipv4_proto_enum;
       ipv4_header.checksum = 0;
       ipv4_header.src_addr.ip_addr = {8'd0,8'd0,8'd0,8'd0};
@@ -328,9 +338,9 @@ class IPv4Packet extends EthernetPacket;
 
    // Returns size of a IPv4 header in octets
    function ipv4_header_size();
-      return('d24);
+      return('d20);
    endfunction: ipv4_header_size
-      
+
    // Set length of IPv4 packet (in bytes)
    function void set_ipv4_length(shortint length);
       this.ipv4_header.length = length;
@@ -378,6 +388,56 @@ class IPv4Packet extends EthernetPacket;
    endfunction : add_payload_octet
 
    // TODO: Calculate IPv4 header checksum
+   function void calculate_ipv4_checksum();
+      logic [19:0]    sum;
+      logic [159:0]   header;
+
+      header = this.ipv4_header;
+
+      sum =
+           header[15:0] +
+           header[31:16] +
+           header[47:32] +
+           header[63:48] +
+           //header[79:64] + Checksum is 0 for calculation
+           header[95:80] +
+           header[111:96] +
+           header[127:112] +
+           header[143:128] +
+           header[159:144];
+      // First iteration of carry folding
+      sum = sum[15:0] + sum[19:16];
+      // Second iteration of carry folding (Should be max 1 carry bit here)
+      sum = sum[15:0] + sum[19:16];
+
+      this.ipv4_header.checksum = ~(sum[15:0]);
+
+   endfunction : calculate_ipv4_checksum
+
+
+
+
+      /*
+       module ip_hdr_checksum
+  (input clk, input [159:0] in, output reg [15:0] out);
+
+   wire [18:0] padded [0:9];
+   reg [18:0]  sum_a, sum_b;
+
+   genvar     i;
+   generate
+      for(i=0 ; i<10 ; i=i+1)
+	assign padded[i] = {3'b000,in[i*16+15:i*16]};
+   endgenerate
+
+   always @(posedge clk)  sum_a = padded[0] + padded[1] + padded[2] + padded[3] + padded[4];
+   always @(posedge clk)  sum_b = padded[5] + padded[6] + padded[7] + padded[8] + padded[9];
+
+   wire [18:0] sum = sum_a + sum_b;
+
+   always @(posedge clk)
+     out <= ~(sum[15:0] + {13'd0,sum[18:16]});
+*/
 
 endclass : IPv4Packet
 
@@ -399,7 +459,7 @@ class UDPPacket extends IPv4Packet;
    function udp_header_size();
       return('d8);
    endfunction: udp_header_size
-   
+
    // Set src_port of UDP packet
    function void set_udp_src_port(logic[15:0] src_port);
       this.udp_header.src_port = src_port;
@@ -452,7 +512,8 @@ class UDPPacket extends IPv4Packet;
       if (use_assertion) begin
          assert(payload_len==this.get_payload_length());
       end else begin
-         $display("ERROR: UDP payload length missmatch");
+         if (payload_len!=this.get_payload_length())
+         $display("ERROR: UDP payload length missmatch. UDP header: %d,  Allocated %d", payload_len, this.get_payload_length());
       end
       this.rewind_payload();
       // Iterate over whole beats.

@@ -132,47 +132,7 @@ module axis_stream_to_pkt_unit_test;
    // This is the UUT that we're
    // running the Unit Tests on
    //===================================
-/*
-   axis_stream_to_pkt
-     #(
-       .TIME_FIFO_SIZE(4),
-       .SAMPLE_FIFO_SIZE(13),
-       .PACKET_FIFO_SIZE(8),
-       .IQ_WIDTH(16)
-       )
-   my_axis_stream_to_pkt
-     (
-      .clk(clk),
-      .rst(rst),
-      //-------------------------------------------------------------------------------
-      // CSR registers
-      //-------------------------------------------------------------------------------
-      .enable(enable),
-      .packet_size(packet_size), // Packet size expressed in 64bit words including headers
-      .flow_id(flow_id), // DRaT Flow ID for this flow (union of src + dst)
-      .flow_id_changed(flow_id_changed), // Pulse high one cycle when flow_id updated.
-      // Status Flags
-      .idle(idle),
-      .overflow(overflow),
-      // System Time
-      .current_time(current_time),
-      //-------------------------------------------------------------------------------
-      // Streaming sample Input Bus
-      //-------------------------------------------------------------------------------
-      .in_clk(clk),
-      .in_i(in_i),
-      .in_q(in_q),
-      .in_valid(in_valid && ready_to_test),
-      //-------------------------------------------------------------------------------
-      // AXIS Output Bus
-      //-------------------------------------------------------------------------------
-      .out_tdata(out.axis.tdata),
-      .out_tvalid(out.axis.tvalid),
-      .out_tlast(out.axis.tlast),
-      .out_tready(out.axis.tready)
-      );
 
-   */
 
    axis_stream_to_pkt_wrapper
      #(
@@ -285,8 +245,8 @@ module axis_stream_to_pkt_unit_test;
          // Allocate packet and Initialize header: INT16_COMPLEX
          test_packets[0] = new;
          test_packets[0].init;
-         test_packets[0].set_flow_src(INPUT);
-         test_packets[0].set_flow_dst(OUTPUT);
+         test_packets[0].set_flow_src(SRC0);
+         test_packets[0].set_flow_dst(DST1);
          // Unsigned value constrained between min packet size and buffer size.
          // (whole number of beats converted to bytes)
          //test_packets[packet_count_in].set_length (beats_to_bytes({$random} % (space-3) + 3));
@@ -426,8 +386,8 @@ module axis_stream_to_pkt_unit_test;
          // Allocate packet and Initialize header: INT16_COMPLEX
          test_packets[0] = new;
          test_packets[0].init;
-         test_packets[0].set_flow_src(INPUT);
-         test_packets[0].set_flow_dst(OUTPUT);
+         test_packets[0].set_flow_src(SRC0);
+         test_packets[0].set_flow_dst(DST1);
 	 test_packets[packet_count_in].set_timestamp(1); // First sample arrives at timestamp 1
 
          // Unsigned value constrained between min packet size and buffer size.
