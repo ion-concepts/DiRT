@@ -703,12 +703,21 @@ interface gmii_t
    logic             col;
    logic             cs;
 
-   // NOTE: tx_clk follows MII style direction to maych Xilinx PCS/PMA
-   modport mac (input txclk, output txd, output txen, output txer,
+   // NOTE: tx_clk follows MII style direction to match Xilinx PCS/PMA
+   modport xilinx_mac (input txclk, output txd, output txen, output txer,
                 input rxclk, input rxd, input rxdv,
                 input rxer, input col, input cs);
 
-   modport phy (output txclk, input txd, input txen, input txer,
+   modport xilinx_phy (output txclk, input txd, input txen, input txer,
+                output rxclk, output rxd, output rxdv,
+                output rxer, output col, output cs);
+
+   // NOTE: Real GMII source synchronous clocking
+   modport mac (output txclk, output txd, output txen, output txer,
+                input rxclk, input rxd, input rxdv,
+                input rxer, input col, input cs);
+
+   modport phy (input txclk, input txd, input txen, input txer,
                 output rxclk, output rxd, output rxdv,
                 output rxer, output col, output cs);
 
