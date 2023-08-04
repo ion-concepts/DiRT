@@ -112,7 +112,7 @@ module axis_status_report
 
     // Mux different DRaT beats onto the bus.
     // (Note many of these paths pass through combinatorially.)
-    always_comb beginout
+    always_comb begin
         axis_status_out.tvalid = (state != S_IDLE);
         axis_status_out.tlast = (state == S_PAYLOAD);
         case(state)
