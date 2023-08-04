@@ -9,6 +9,6 @@
 #
 #-----------------------------------------------------------------------------
 
-DIRT_GLOBAL_SRCS = $(abspath $(addprefix $(DIRT_DIR)/lib/axis/, \
+DIRT_GLOBAL_SRCS = $(abspath $(addprefix $(DIRT_DIR)/lib/global/, \
 drat_protocol.sv \
 ))
