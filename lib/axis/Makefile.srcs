@@ -38,5 +38,5 @@ axis_stream_to_pkt_backpressured.sv \
 axis_stream_to_pkt.sv \
 axis_stream_to_pkt_wrapper.sv \
 axis.sv \
-axis_valve.sv \\
+axis_valve.sv \
 ))
