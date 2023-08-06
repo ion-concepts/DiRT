@@ -108,7 +108,7 @@ module axis_fifo_cdc
 		    .VENDOR(VENDOR)
 		    ) fifo_1clk
 	  (
-	   .clk(out_clk), .rst(rst), .clear(1'b0),
+	   .clk(out_clk), .rst(rst),
 	   .in_tdata(tdata_int), .in_tvalid(tvalid_int), .in_tready(tready_int),
 	   .out_tdata(out_tdata), .out_tvalid(out_tvalid), .out_tready(out_tready),
 	   .space(), .occupied());
