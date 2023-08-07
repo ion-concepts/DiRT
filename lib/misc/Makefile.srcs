@@ -9,7 +9,7 @@
 # #
 # #-----------------------------------------------------------------------------
 #
-DIRT_AXIS_SRCS = $(abspath $(addprefix $(DIRT_DIR)/lib/axis/, \
+DIRT_MISC_SRCS = $(abspath $(addprefix $(DIRT_DIR)/lib/misc/, \
 ram_dual_port_2clk.sv \
 ))
 
