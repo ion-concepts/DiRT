@@ -82,7 +82,8 @@ module drat2eth_framer
         if (rst) begin
            state <= S_IDLE;
            drat_header <= '0;
-           out_axis.tlast <= 1'b0;
+           csr_idle <= 1'b0;
+           
         end else begin
            case (state)
              // Use first beat of new packet to populate DRaT header structure
