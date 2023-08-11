@@ -1,0 +1,111 @@
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg version="1.1"
+ width="600px" height="332px"
+ viewBox="0 0 600 332"
+ xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges"
+ stroke-width="1" text-rendering="geometricPrecision">
+<polygon fill="white" points="76,7 122,7 122,16 76,16"/>
+<text x="100" y="16" textLength="44" font-family="Helvetica" font-size="12" fill="black" text-anchor="middle">
+
+Network
+</text>
+<polygon fill="white" points="273,7 325,7 325,16 273,16"/>
+<text x="300" y="16" textLength="50" font-family="Helvetica" font-size="12" fill="black" text-anchor="middle">
+
+Deframer
+</text>
+<polygon fill="white" points="475,7 523,7 523,16 475,16"/>
+<text x="500" y="16" textLength="47" font-family="Helvetica" font-size="12" fill="black" text-anchor="middle">
+
+Samples
+</text>
+<line x1="100" y1="22" x2="100" y2="47" stroke="black"/>
+<line x1="300" y1="22" x2="300" y2="47" stroke="black"/>
+<line x1="500" y1="22" x2="500" y2="47" stroke="black"/>
+<line x1="100" y1="47" x2="100" y2="83" stroke="black"/>
+<line x1="300" y1="47" x2="300" y2="83" stroke="black"/>
+<line x1="500" y1="47" x2="500" y2="83" stroke="black"/>
+<line x1="100" y1="58" x2="300" y2="66" stroke="black"/>
+<polygon fill="black" points="300,66 290,72 290,60"/>
+<polygon fill="white" points="149,52 249,52 249,61 149,61"/>
+<text x="150" y="61" textLength="98" font-family="Helvetica" font-size="12" fill="black">
+INT16_COMPLEX
+</text>
+<polygon fill="white" points="168,63 231,63 231,72 168,72"/>
+<text x="169" y="72" textLength="61" font-family="Helvetica" font-size="12" fill="black">
+ SEQ_ID=0
+</text>
+<line x1="100" y1="83" x2="100" y2="119" stroke="black"/>
+<line x1="300" y1="83" x2="300" y2="119" stroke="black"/>
+<line x1="500" y1="83" x2="500" y2="119" stroke="black"/>
+<line x1="300" y1="94" x2="500" y2="102" stroke="black"/>
+<polygon fill="black" points="500,102 490,108 490,96"/>
+<polygon fill="white" points="364,88 435,88 435,97 364,97"/>
+<text x="365" y="97" textLength="69" font-family="Helvetica" font-size="12" fill="black">
+Sample Data
+</text>
+<line x1="100" y1="119" x2="100" y2="155" stroke="black"/>
+<line x1="300" y1="119" x2="300" y2="155" stroke="black"/>
+<line x1="500" y1="119" x2="500" y2="155" stroke="black"/>
+<line x1="100" y1="130" x2="300" y2="138" stroke="black"/>
+<polygon fill="black" points="300,138 290,144 290,132"/>
+<polygon fill="white" points="133,124 265,124 265,133 133,133"/>
+<text x="134" y="133" textLength="130" font-family="Helvetica" font-size="12" fill="black">
+INT16_COMPLEX_EOB
+</text>
+<polygon fill="white" points="168,135 231,135 231,144 168,144"/>
+<text x="169" y="144" textLength="61" font-family="Helvetica" font-size="12" fill="black">
+ SEQ_ID=1
+</text>
+<line x1="100" y1="155" x2="100" y2="191" stroke="black"/>
+<line x1="300" y1="155" x2="300" y2="191" stroke="black"/>
+<line x1="500" y1="155" x2="500" y2="191" stroke="black"/>
+<line x1="300" y1="166" x2="500" y2="174" stroke="black"/>
+<polygon fill="black" points="500,174 490,180 490,168"/>
+<polygon fill="white" points="364,160 435,160 435,169 364,169"/>
+<text x="365" y="169" textLength="69" font-family="Helvetica" font-size="12" fill="black">
+Sample Data
+</text>
+<line x1="100" y1="191" x2="100" y2="227" stroke="black"/>
+<line x1="300" y1="191" x2="300" y2="227" stroke="black"/>
+<line x1="500" y1="191" x2="500" y2="227" stroke="black"/>
+<line x1="300" y1="202" x2="100" y2="210" stroke="black"/>
+<polygon fill="black" points="100,210 110,216 110,204"/>
+<polygon fill="white" points="181,196 217,196 217,205 181,205"/>
+<text x="182" y="205" textLength="34" font-family="Helvetica" font-size="12" fill="black">
+Status
+</text>
+<polygon fill="white" points="97,207 302,207 302,216 97,216"/>
+<text x="98" y="216" textLength="203" font-family="Helvetica" font-size="12" fill="black">
+ SEQ_ID=0, ACK_EOB for SEQ_ID=1
+</text>
+<line x1="100" y1="227" x2="100" y2="263" stroke="black"/>
+<line x1="300" y1="227" x2="300" y2="263" stroke="black"/>
+<line x1="500" y1="227" x2="500" y2="263" stroke="black"/>
+<line x1="100" y1="238" x2="300" y2="246" stroke="black"/>
+<polygon fill="black" points="300,246 290,252 290,240"/>
+<polygon fill="white" points="149,232 249,232 249,241 149,241"/>
+<text x="150" y="241" textLength="98" font-family="Helvetica" font-size="12" fill="black">
+INT16_COMPLEX
+</text>
+<polygon fill="white" points="168,243 231,243 231,252 168,252"/>
+<text x="169" y="252" textLength="61" font-family="Helvetica" font-size="12" fill="black">
+ SEQ_ID=0
+</text>
+<line x1="100" y1="263" x2="100" y2="299" stroke="black"/>
+<line x1="300" y1="263" x2="300" y2="299" stroke="black"/>
+<line x1="500" y1="263" x2="500" y2="299" stroke="black"/>
+<line x1="300" y1="274" x2="500" y2="282" stroke="black"/>
+<polygon fill="black" points="500,282 490,288 490,276"/>
+<polygon fill="white" points="364,268 435,268 435,277 364,277"/>
+<text x="365" y="277" textLength="69" font-family="Helvetica" font-size="12" fill="black">
+Sample Data
+</text>
+<line x1="100" y1="299" x2="100" y2="324" stroke="black"/>
+<line x1="300" y1="299" x2="300" y2="324" stroke="black"/>
+<line x1="500" y1="299" x2="500" y2="324" stroke="black"/>
+<line x1="100" y1="310" x2="100" y2="332" stroke="black"/>
+<line x1="300" y1="310" x2="300" y2="332" stroke="black"/>
+<line x1="500" y1="310" x2="500" y2="332" stroke="black"/>
+</svg>
