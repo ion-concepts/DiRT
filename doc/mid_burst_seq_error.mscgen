@@ -1,0 +1,19 @@
+# DRaT
+# P{acket flow to generate SEQ_ERROR_MID
+#
+msc {
+ arcgradient = 8;
+
+ a [label="Host"], b [label="Network"],c [label="Deframer"],d [label="Samples"];
+ |||;
+ a=>b [label="INT16_COMPLEX\n SEQ_ID=0"];
+ b=>c [label="INT16_COMPLEX\n SEQ_ID=0"];
+ c=>d [label="Sample Data"];
+ a-xb [label="INT16_COMPLEX\n SEQ_ID=1"];
+ a=>b [label="INT16_COMPLEX\n SEQ_ID=2"];
+ b=>c [label="INT16_COMPLEX\n SEQ_ID=2"];
+ b<=c [label="Status\n SEQ_ID=0\n MIDBURST SEQ_ERROR for SEQ_ID=2"];
+ a<=b [label="Status\n SEQ_ID=0\n MIDBURST SEQ_ERROR for SEQ_ID=2"];
+
+|||;
+}

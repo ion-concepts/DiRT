@@ -1,0 +1,26 @@
+# DRaT
+# Packet flow to generate ACK at Sink
+#
+msc {
+ arcgradient = 8;
+ #hscale="1.5";
+
+ a [label="Network"],b [label="Deframer"],c [label="Samples"];
+ |||;
+ b rbox b [label="POLICY: ACK every 4th packet",textbgcolor="yellow"];
+ |||;
+ a=>b [label="INT16_COMPLEX\n SEQ_ID=0"];
+ b=>c [label="Sample Data"];
+ a=>b [label="INT16_COMPLEX\n SEQ_ID=1"];
+ b=>c [label="Sample Data"];
+ a=>b [label="INT16_COMPLEX\n SEQ_ID=2"];
+ b=>c [label="Sample Data"];
+ a=>b [label="INT16_COMPLEX\n SEQ_ID=3"];
+ b=>c [label="Sample Data"];
+ a<=b [label="STATUS\n SEQ_ID=0, ACK for SEQ_ID=3"];
+ a=>b [label="INT16_COMPLEX\n SEQ_ID=4"];
+ b=>c [label="Sample Data"];
+
+
+|||;
+}

@@ -1,0 +1,28 @@
+# DRaT
+# Packet flow to generate TIME ERROR at Sink
+#
+msc {
+ arcgradient = 8;
+ #hscale="1.5";
+
+ a [label="Network"],b [label="Deframer"],c [label="Samples"];
+ |||;
+  b rbox b [label="TIME = 0",textbgcolor="yellow"];
+ ...;
+ a=>b [label="INT16_COMPLEX_EOB\n SEQ_ID=0\n TIME=2000"];
+ b rbox b [label="TIME = 1000",textbgcolor="yellow"];
+ ...;
+ --- [label="Deframer waits for time match"];
+ ...;
+ b rbox b [label="TIME = 2000",textbgcolor="yellow"];
+ b=>c [label="TX Data"];
+ a<=b [label="STATUS\n SEQ_ID=0, EOB for SEQ_ID=0"];
+ |||;
+ ...;
+ b rbox b [label="TIME = 6000",textbgcolor="yellow"];
+ a=>b [label="INT16_COMPLEX_EOB\n SEQ_ID=1\n TIME=5000"];
+ a<=b [label="STATUS\n SEQ_ID=1\n TIME_ERROR for SEQ_ID=1"];
+
+
+|||;
+}
