@@ -49,31 +49,31 @@ module axis_pkt_to_stream
      input logic        clk,
      input logic        rst,
      // System time in
-     input logic [63:0] current_time_in,
+     input logic [63:0] current_time,
      // Enable signals
-     input logic        deframer_enable_in,
-     input logic        status_enable_in,
-     input logic        consumption_enable_in,
-     input logic        tx_control_enable_in,
+     input logic        deframer_enable,
+     input logic        status_enable,
+     input logic        consumption_enable,
+     input logic        tx_control_enable,
      // FlowID to me used in status packet header
-     input logic [31:0] status_flow_id_in,
+     input logic [31:0] status_flow_id,
      // FlowID to me used in consumption packet header
-     input logic [31:0] consumption_flow_id_in,
+     input logic [31:0] consumption_flow_id,
      // Error policy register
-     input logic        error_policy_next_packet_in,
+     input logic        error_policy_next_packet,
      // Flag Output beats that are active sample data vs zero padding
      output logic       run_out,
      // Dirt/DRat packetized stream in
-     axis_t.slave axis_pkt_in,
+     axis_t.slave axis_pkt,
      // Status pkt stream out
-     axis_t.master axis_status_out,
+     axis_t.master axis_status,
      // Consumption pkt stream out
-     axis_t.master axis_consumption_out,
+     axis_t.master axis_consumption,
      // Stream oriented raw IQ samples out
-     axis_t.master axis_stream_out
+     axis_t.master axis_stream
      );
 
-    import dirt_protocol::*;
+    import drat_protocol::*;
     import axis_pkt_to_stream_pkg::*;
 
     // Width of FIFO passing unframed IQ samples plus metadata
@@ -102,8 +102,8 @@ module axis_pkt_to_stream
     axis_deframer axis_deframer_i (
                                    .clk(clk),
                                    .rst(rst),
-                                   .enable_in(deframer_enable_in),
-                                   .axis_pkt_in(axis_pkt_in),
+                                   .enable_in(deframer_enable),
+                                   .axis_pkt_in(axis_pkt),
                                    .axis_tail_out(axis_tail)
                                    );
 
@@ -129,8 +129,8 @@ module axis_pkt_to_stream
     axis_tx_control axis_tx_control_i (
                                        .clk(clk),
                                        .rst(rst),
-                                       .enable_in(tx_control_enable_in),
-                                       .error_policy_next_packet_in(error_policy_next_packet_in),
+                                       .enable_in(tx_control_enable),
+                                       .error_policy_next_packet_in(error_policy_next_packet),
                                        .axis_head_in(axis_head),
                                        .now_in(now),
                                        .late_in(late),
@@ -139,7 +139,7 @@ module axis_pkt_to_stream
                                        .generate_consumption_out(generate_consumption),
                                        .consumed_seq_num_out(consumed_seq_num),
                                        .run_out(run_out),
-                                       .axis_stream_out(axis_stream_out)
+                                       .axis_stream_out(axis_stream)
                                        );
 
     //
@@ -148,12 +148,12 @@ module axis_pkt_to_stream
     axis_status_report axis_status_report_i (
                                              .clk(clk),
                                              .rst(rst),
-                                             .enable_in(status_enable_in),
-                                             .flow_id_in(status_flow_id_in),
+                                             .enable_in(status_enable),
+                                             .flow_id_in(status_flow_id),
                                              .generate_pkt_in(generate_pkt),
                                              .status_payload_in(status_payload),
-                                             .current_time_in(current_time_in),
-                                             .axis_status_out(axis_status_out)
+                                             .current_time_in(current_time),
+                                             .axis_status_out(axis_status)
                                              );
 
     //
@@ -162,12 +162,12 @@ module axis_pkt_to_stream
     axis_status_report axis_consumption_report_i (
                                                   .clk(clk),
                                                   .rst(rst),
-                                                  .enable_in(consumption_enable_in),
-                                                  .flow_id_in(consumption_flow_id_in),
+                                                  .enable_in(consumption_enable),
+                                                  .flow_id_in(consumption_flow_id),
                                                   .generate_pkt_in(generate_consumption),
                                                   .status_payload_in({ACK,24'h0,consumed_seq_num}),
-                                                  .current_time_in(current_time_in),
-                                                  .axis_status_out(axis_consumption_out)
+                                                  .current_time_in(current_time),
+                                                  .axis_status_out(axis_consumption)
                                                   );
 
 
@@ -177,10 +177,10 @@ module axis_pkt_to_stream
     time_check time_check_i (
                              .clk(clk),
                              .rst(rst),
-                             .current_time_in(current_time_in),
-                             .event_time_in(axis_head.tdata[127:64]),
-                             .now_out(now),
-                             .late_out(late)
+                             .current_time(current_time),
+                             .event_time(axis_head.tdata[127:64]),
+                             .now(now),
+                             .late(late)
                              );
 
 

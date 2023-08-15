@@ -62,7 +62,7 @@ module axis_tx_control
      axis_t.master axis_stream_out
      );
 
-    import dirt_protocol::*;
+    import drat_protocol::*;
     import axis_pkt_to_stream_pkg::*;
 
     
