@@ -198,6 +198,7 @@ class EthernetPacket;
 
 
    // Provide explicit constructor
+   // len: Size of ultimate payload in octets (NOT including any other encapsulated protocol headers)
    function new(ethertype_enum_t ethertype = IPV4, shortint len=1);
       eth_header.mac_dst = 0;
       eth_header.mac_src = 0;
@@ -254,7 +255,7 @@ class EthernetPacket;
 
    // Return size of alocated payload array
    function shortint get_payload_length();
-      return(this.payload.size);
+      return(this.payload.size());
    endfunction : get_payload_length
 
    // Packets payload is already allocated.
@@ -265,13 +266,25 @@ class EthernetPacket;
       next = next + 1;
    endfunction : set_payload_octet
 
+   // Populate 8 consectutive payload octets
+   function void set_payload_8octets(bit [63:0] beat);
+      set_payload_octet(beat[63:56]);
+      set_payload_octet(beat[55:48]);
+      set_payload_octet(beat[47:40]);
+      set_payload_octet(beat[39:32]);
+      set_payload_octet(beat[31:24]);
+      set_payload_octet(beat[23:16]);
+      set_payload_octet(beat[15:8]);
+      set_payload_octet(beat[7:0]);
+   endfunction : set_payload_8octets
+
    // Return next payload beat
    function bit [7:0] get_payload_octet();
       next = next + 1;
       return(this.payload[next-1]);
    endfunction : get_payload_octet
 
-   // Add beat to end of packet without being protocol aware.
+   // Add octet to end of packet without being protocol aware.
    // Allocate additional storage.
    // (i.e we don't look at or change the header)
    function void add_payload_octet(bit [7:0] octet);
@@ -300,22 +313,33 @@ class IPv4Packet extends EthernetPacket;
   protected ipv4_header_t ipv4_header;
 
    // Provide explicit constructor
+   // len: Size of ultimate payload in octets (NOT including any other encapsulated protocol headers)
    function new(ipv4_proto_enum_t ipv4_proto_enum = UDP, shortint len=1);
       super.new(IPV4,len);
       ipv4_header.version = 4;
       ipv4_header.ihl = 5;
       ipv4_header.dscp = 0;
       ipv4_header.ecn = 0;
-      ipv4_header.length = 20; // IPv4 Header length (no options)
+      case(ipv4_proto_enum)
+        UDP: ipv4_header.length = 20+8+len;
+        ICMP: ipv4_header.length = 20+8+len;
+        IGMP: assert(0); // Need to finish support
+        TCP: assert(0); // Need to finish support
+      endcase
       ipv4_header.identification = 0;
       ipv4_header.flags = 3'b010;
       ipv4_header.fragment = 0;
-      ipv4_header.ttl = 255;
+      ipv4_header.ttl = 8'h10;
       ipv4_header.protocol.ipv4_proto_enum = ipv4_proto_enum;
       ipv4_header.checksum = 0;
       ipv4_header.src_addr.ip_addr = {8'd0,8'd0,8'd0,8'd0};
       ipv4_header.dst_addr.ip_addr = {8'd0,8'd0,8'd0,8'd0};
    endfunction // init_ipv4_header
+
+   // Returns size of a IPv4 header in octets
+   function ipv4_header_size();
+      return('d20);
+   endfunction: ipv4_header_size
 
    // Set length of IPv4 packet (in bytes)
    function void set_ipv4_length(shortint length);
@@ -364,14 +388,65 @@ class IPv4Packet extends EthernetPacket;
    endfunction : add_payload_octet
 
    // TODO: Calculate IPv4 header checksum
+   function void calculate_ipv4_checksum();
+      logic [19:0]    sum;
+      logic [159:0]   header;
+
+      header = this.ipv4_header;
+
+      sum =
+           header[15:0] +
+           header[31:16] +
+           header[47:32] +
+           header[63:48] +
+           //header[79:64] + Checksum is 0 for calculation
+           header[95:80] +
+           header[111:96] +
+           header[127:112] +
+           header[143:128] +
+           header[159:144];
+      // First iteration of carry folding
+      sum = sum[15:0] + sum[19:16];
+      // Second iteration of carry folding (Should be max 1 carry bit here)
+      sum = sum[15:0] + sum[19:16];
+
+      this.ipv4_header.checksum = ~(sum[15:0]);
+
+   endfunction : calculate_ipv4_checksum
+
+
+
+
+      /*
+       module ip_hdr_checksum
+  (input clk, input [159:0] in, output reg [15:0] out);
+
+   wire [18:0] padded [0:9];
+   reg [18:0]  sum_a, sum_b;
+
+   genvar     i;
+   generate
+      for(i=0 ; i<10 ; i=i+1)
+	assign padded[i] = {3'b000,in[i*16+15:i*16]};
+   endgenerate
+
+   always @(posedge clk)  sum_a = padded[0] + padded[1] + padded[2] + padded[3] + padded[4];
+   always @(posedge clk)  sum_b = padded[5] + padded[6] + padded[7] + padded[8] + padded[9];
+
+   wire [18:0] sum = sum_a + sum_b;
+
+   always @(posedge clk)
+     out <= ~(sum[15:0] + {13'd0,sum[18:16]});
+*/
 
 endclass : IPv4Packet
+
 
 class UDPPacket extends IPv4Packet;
    protected udp_header_t udp_header;
 
-
    // Provide explicit constructor
+   // len: Size of ultimate payload in octets (NOT including any other encapsulated protocol headers)
    function new(shortint len=1);
       super.new(UDP,len);
       udp_header.src_port = 0;
@@ -379,6 +454,11 @@ class UDPPacket extends IPv4Packet;
       udp_header.length = 8 + len;
       udp_header.checksum = 0; // 0 checksum is legal if unused
    endfunction // init_udp_header
+
+   // Returns size of a UDP header in octets
+   function udp_header_size();
+      return('d8);
+   endfunction: udp_header_size
 
    // Set src_port of UDP packet
    function void set_udp_src_port(logic[15:0] src_port);
@@ -432,7 +512,8 @@ class UDPPacket extends IPv4Packet;
       if (use_assertion) begin
          assert(payload_len==this.get_payload_length());
       end else begin
-         $display("ERROR: UDP payload length missmatch");
+         if (payload_len!=this.get_payload_length())
+         $display("ERROR: UDP payload length missmatch. UDP header: %d,  Allocated %d", payload_len, this.get_payload_length());
       end
       this.rewind_payload();
       // Iterate over whole beats.
@@ -622,6 +703,16 @@ interface gmii_t
    logic             col;
    logic             cs;
 
+   // NOTE: tx_clk follows MII style direction to match Xilinx PCS/PMA
+   modport xilinx_mac (input txclk, output txd, output txen, output txer,
+                input rxclk, input rxd, input rxdv,
+                input rxer, input col, input cs);
+
+   modport xilinx_phy (output txclk, input txd, input txen, input txer,
+                output rxclk, output rxd, output rxdv,
+                output rxer, output col, output cs);
+
+   // NOTE: Real GMII source synchronous clocking
    modport mac (output txclk, output txd, output txen, output txer,
                 input rxclk, input rxd, input rxdv,
                 input rxer, input col, input cs);
@@ -652,7 +743,7 @@ interface mdio_t;
    logic mdt;
 
    modport mac (output mdc, output mdo, input mdi, output mdt);
-   modport phy (input mdc, input mdo, output mdi, input mdt);
+   modport phy (input mdc, input mdo, output mdi, output mdt);
    modport monitor (input mdc, input mdo, input mdi, input mdt);
 
 

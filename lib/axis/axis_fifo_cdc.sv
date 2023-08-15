@@ -80,7 +80,7 @@ module axis_fifo_cdc
 	   );
       else
 	// BRAM based
-	fifo_4k_2clk fifo_4k_2clk
+	fifo_512x72_2clk fifo_512x72_2clk
 	  (
 	   .rst(rst),
 	   .wr_clk(in_clk),
@@ -98,7 +98,7 @@ module axis_fifo_cdc
    endgenerate
    //
    // Only need to use a single actual 2 clock FIFO to bridge clock domain
-   // so top up remaining cpacity required with single clock FIFO.
+   // so top up remaining capcity required with single clock FIFO.
    //
    generate
       if(SIZE>9)
@@ -108,7 +108,7 @@ module axis_fifo_cdc
 		    .VENDOR(VENDOR)
 		    ) fifo_1clk
 	  (
-	   .clk(out_clk), .rst(rst), .clear(1'b0),
+	   .clk(out_clk), .rst(rst),
 	   .in_tdata(tdata_int), .in_tvalid(tvalid_int), .in_tready(tready_int),
 	   .out_tdata(out_tdata), .out_tvalid(out_tvalid), .out_tready(out_tready),
 	   .space(), .occupied());

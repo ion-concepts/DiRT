@@ -6,13 +6,13 @@ module axis_mm_to_pkt_wrapper #(
         //-------------------------------------------------------------------------------
         // CSR registers
         //-------------------------------------------------------------------------------
-        input logic [31:0]  upper_in,
-        input logic         upper_pls_in,
-        input logic [31:0]  lower_norm_in,
-        input logic         lower_norm_pls_in,
-        input logic [31:0]  lower_last_in,
-        input logic         lower_last_pls_in,
-        output logic [31:0] status_out,
+        input logic [31:0]  upper,
+        input logic         upper_pls,
+        input logic [31:0]  lower_norm,
+        input logic         lower_norm_pls,
+        input logic [31:0]  lower_last,
+        input logic         lower_last_pls,
+        output logic [31:0] status,
         //-------------------------------------------------------------------------------
         // AXIS Output Bus
         //-------------------------------------------------------------------------------
@@ -34,13 +34,13 @@ module axis_mm_to_pkt_wrapper #(
     axis_mm_to_pkt #(.FIFO_SIZE(FIFO_SIZE)) core (
         .clk(clk),
         .rst(rst),
-        .upper(upper_in),
-        .upper_pls(upper_pls_in),
-        .lower_norm(lower_norm_in),
-        .lower_norm_pls(lower_norm_pls_in),
-        .lower_last(lower_last_in),
-        .lower_last_pls(lower_last_pls_in),
-        .status(status_out),
+        .upper(upper),
+        .upper_pls(upper_pls),
+        .lower_norm(lower_norm),
+        .lower_norm_pls(lower_norm_pls),
+        .lower_last(lower_last),
+        .lower_last_pls(lower_last_pls),
+        .status(status),
         .out_tdata(out_tdata),
         .out_tvalid(out_tvalid),
         .out_tlast(out_tlast),

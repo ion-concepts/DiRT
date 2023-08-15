@@ -12,7 +12,7 @@
 // An input signal "generate_pkt_in" triggers packet generation.
 // This signal is not handshaked and once it has been asserted
 // across a clock edge the asserter is resposible for de-asserting
-// it within 4 clock cycles or another staus packet may be generated.
+// it within 4 clock cycles or another status packet may be generated.
 //
 // Because the signal is not handshaked the asserter has no guarantee
 // that a status packet has been generated. Excessive congestion that

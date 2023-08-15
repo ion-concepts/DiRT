@@ -7,6 +7,8 @@
 // Deep packet inspection of ingressing ethernet frames on a 64bit AXIS bus
 // Output switched between 2 egress ports.
 // Can optionally strip L1-4 protocols for Egress port out1
+// Port out1 will alway include tuser bits embedded in tdata even if DRaT format.
+// These can be discarded for DRaT packets.
 //
 // License: CERN-OHL-P (See LICENSE.md)
 //
@@ -37,7 +39,7 @@ module eth_classifier_2_egress
    input logic [15:0] csr_udp0,
    input logic [15:0] csr_udp1,
    input logic        csr_expose_drat,
-   input logic        csr_enable
+   input logic        csr_enable //TODO
    );
 
    axis_t #(.WIDTH(68)) out0_pre_axis(.clk(clk)), out1_pre_axis(.clk(clk));
@@ -134,11 +136,11 @@ module eth_classifier_2_egress
                  // MAC has broadcast addr or multicast bit set. Only send to Egress0
                  header_ram_addr <= 0;
                  state <= FORWARD_0;
-              end else if (!is_eth_dst_addr) begin
+              end else if (/*!is_eth_dst_addr*/0) begin
                  // MAC dst is not our address. Discard packet.
                  header_ram_addr <= HEADER_RAM_SIZE - 1;
                  state <= DROP_PACKET;
-              end else if (is_udp_dst_ports != 0) begin
+              end else if (is_ipv4_proto_udp && (is_udp_dst_ports != 0)) begin
                  // Has our MAC dst addr and has UDP port match.
                  // Jump to DRaT header if enabled to strip lower protocols.
                  header_ram_addr <= csr_expose_drat ? 6 : 0;
