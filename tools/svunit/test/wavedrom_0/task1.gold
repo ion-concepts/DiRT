@@ -1,8 +1,0 @@
-task task1();
-  step();
-  nextSamplePoint();
-  psel = 'h0;
-  step();
-  nextSamplePoint();
-  psel = 'h1;
-endtask

@@ -13,7 +13,8 @@
 //`timescale 1ns/1ps
 
 `include "svunit_defines.svh"
-`include "axis_demux4.sv"
+`include "axis_demux4_wrapper.sv"
+
 
 module axis_demux4_unit_test;
   timeunit 1ns; 
@@ -27,11 +28,11 @@ module axis_demux4_unit_test;
    logic clk;
    logic rst;
    
-   axis_slave_t in0(.clk(clk));
-   axis_master_t out0(.clk(clk));
-   axis_master_t out1(.clk(clk));
-   axis_master_t out2(.clk(clk));
-   axis_master_t out3(.clk(clk));
+   axis_t in0(.clk(clk));
+   axis_t out0(.clk(clk));
+   axis_t out1(.clk(clk));
+   axis_t out2(.clk(clk));
+   axis_t out3(.clk(clk)); 
    logic [63:0] test_tdata;
    logic 	test_tlast;
    logic [63:0] header;
@@ -53,7 +54,8 @@ module axis_demux4_unit_test;
   // This is the UUT that we're 
   // running the Unit Tests on
   //===================================
-  axis_demux4 
+  
+  axis_demux4_wrapper
     #(
       .WIDTH(64)
       )
@@ -64,45 +66,18 @@ module axis_demux4_unit_test;
       //
       // External logic supplies egress port selection.
       //
-      .header(header),
-      .select(select),
+      .header_out(header),
+      .select_in(select),
       //
-      // Output Bus 0
+      // Buses
       //
-      .out0_tdata(out0.tdata),
-      .out0_tvalid(out0.tvalid),
-      .out0_tlast(out0.tlast),
-      .out0_tready(out0.tready),
-      //
-      // Output Bus 1
-      //
-      .out1_tdata(out1.tdata),
-      .out1_tvalid(out1.tvalid),
-      .out1_tlast(out1.tlast),
-      .out1_tready(out1.tready),
-      //
-      // Output Bus 2
-      //
-      .out2_tdata(out2.tdata),
-      .out2_tvalid(out2.tvalid),
-      .out2_tlast(out2.tlast),
-      .out2_tready(out2.tready),
-      //
-      // Output Bus 3
-      //
-      .out3_tdata(out3.tdata),
-      .out3_tvalid(out3.tvalid),
-      .out3_tlast(out3.tlast),
-      .out3_tready(out3.tready), 
-      //
-      // Input Bus
-      //
-      .in_tdata(in0.tdata),
-      .in_tvalid(in0.tvalid),
-      .in_tlast(in0.tlast), 
-      .in_tready(in0.tready)
+      .out0_axis(out0),
+      .out1_axis(out1),
+      .out2_axis(out2),
+      .out3_axis(out3),
+      .in_axis(in0)
       );
-   
+
 
 
   //===================================

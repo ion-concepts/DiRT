@@ -4,7 +4,7 @@
 // Author:  Ian Buckley, Ion Concepts LLC
 //
 // Description:
-// 
+//
 // License: CERN-OHL-P (See LICENSE.md)
 //
 //-------------------------------------------------------------------------------
@@ -12,17 +12,12 @@
 `timescale 1ns/1ps
 
 `include "svunit_defines.svh"
+`include "axis_stream_to_pkt.sv"
 
-`ifndef _PROTOCOL_SV_
-`include "protocol.sv"
-`endif
-`ifndef _AXIS_SV_
-`include "axis.sv"
-`endif
 module axis_stream_to_pkt_unit_test;
-   timeunit 1ns; 
+   timeunit 1ns;
    timeprecision 1ps;
-
+   import drat_protocol::*;
    import svunit_pkg::svunit_testcase;
 
    string name = "axis_stream_to_pkt_ut";
@@ -31,7 +26,7 @@ module axis_stream_to_pkt_unit_test;
    logic clk;
    logic rst;
    logic reset_timestamp;
-   
+
 
    // Output bus
    pkt_stream_t out(.clk(clk));
@@ -45,45 +40,45 @@ module axis_stream_to_pkt_unit_test;
    // Streaming sample interface
    wire [15:0] in_i, in_q;
 
-   wire        in_valid; 
+   wire        in_valid;
    wire        in_last;
-   
+
    // CSR signals
    logic        enable;
    logic [12:0] packet_size; // Packet size expressed in 64bit words including headers
-   logic [31:0] flow_id; // DiRT Flow ID for this flow (union of src + dst)
+   logic [31:0] flow_id; // DRaT Flow ID for this flow (union of src + dst)
    logic 	flow_id_changed; // Pulse high one cycle when flow_id updated.
    wire 	idle;
    wire 	overflow;
    // Time
    logic [63:0] current_time;
-  
-   
+
+
    wire [31:0]  status;
-   
+
    logic [63:0] beat_in, beat1, beat2;
    logic        tlast_in, tlast_out;
-        
+
    // Monitor space in test buffer
    int          space;
    //
    int          x;
    int          timeout;
-   
+
    int          packet_count_in;
    int          packet_count_out;
-  
+
    logic        ready_to_test;
 
    logic [31:0] load_tdata;
    logic 	load_tlast;
    logic 	load_tready;
    logic 	load_tvalid;
-   
-   Packet test_packets[];
+
+   DRaTPacket test_packets[];
 
 
-   
+
    //
    // Generate clk
    //
@@ -110,33 +105,36 @@ module axis_stream_to_pkt_unit_test;
       else
 	current_time <= current_time + 1 ;
    end
-   
+
 
    //-------------------------------------------------------------------------------
    // Buffer input sample stream a.k.a Golden payload (Note doesn't drive UUT directly just stores test stimulus.
    // FIFO is 32 bits wide for one complex 16b sample per clock.
    //-------------------------------------------------------------------------------
-  
-   
+
+
    axis_fifo
      #(.WIDTH(33),.SIZE(11))
    axis_fifo_i0
      (.clk(clk), .rst(rst),
-      .in_tdata({load_tlast,load_tdata}), 
-      .in_tvalid(load_tvalid), 
+      .in_tdata({load_tlast,load_tdata}),
+      .in_tvalid(load_tvalid),
       .in_tready(load_tready),
-      .out_tdata({in_last,in_i,in_q}), 
-      .out_tvalid(in_valid), 
+      .out_tdata({in_last,in_i,in_q}),
+      .out_tvalid(in_valid),
       .out_tready(ready_to_test), //IJB Revisit tready
-      .space(), 
+      .space(),
       .occupied());
-   
+
+
+
    //===================================
-   // This is the UUT that we're 
+   // This is the UUT that we're
    // running the Unit Tests on
    //===================================
 
-   axis_stream_to_pkt
+
+   axis_stream_to_pkt_wrapper
      #(
        .TIME_FIFO_SIZE(4),
        .SAMPLE_FIFO_SIZE(13),
@@ -152,7 +150,7 @@ module axis_stream_to_pkt_unit_test;
       //-------------------------------------------------------------------------------
       .enable(enable),
       .packet_size(packet_size), // Packet size expressed in 64bit words including headers
-      .flow_id(flow_id), // DiRT Flow ID for this flow (union of src + dst)
+      .flow_id(flow_id), // DRaT Flow ID for this flow (union of src + dst)
       .flow_id_changed(flow_id_changed), // Pulse high one cycle when flow_id updated.
       // Status Flags
       .idle(idle),
@@ -169,12 +167,9 @@ module axis_stream_to_pkt_unit_test;
       //-------------------------------------------------------------------------------
       // AXIS Output Bus
       //-------------------------------------------------------------------------------
-      .out_tdata(out.axis.tdata),
-      .out_tvalid(out.axis.tvalid),
-      .out_tlast(out.axis.tlast),
-      .out_tready(out.axis.tready)
+      .out_axis(out.axis)
       );
-  
+
 
   //===================================
   // Build
@@ -200,17 +195,17 @@ module axis_stream_to_pkt_unit_test;
      flow_id <= 0;
      flow_id_changed <= 0;
      reset_timestamp <= 0;
-     
+
      repeat(10) @(posedge clk);
      rst <= 1'b0;
      idle_all();
-     
+
 
   endtask
 
 
   //===================================
-  // Here we deconstruct anything we 
+  // Here we deconstruct anything we
   // need after running the Unit Tests
   //===================================
   task teardown();
@@ -250,24 +245,24 @@ module axis_stream_to_pkt_unit_test;
          // Allocate packet and Initialize header: INT16_COMPLEX
          test_packets[0] = new;
          test_packets[0].init;
-         test_packets[0].set_flow_src(INPUT);
-         test_packets[0].set_flow_dst(OUTPUT);
+         test_packets[0].set_flow_src(SRC0);
+         test_packets[0].set_flow_dst(DST1);
          // Unsigned value constrained between min packet size and buffer size.
          // (whole number of beats converted to bytes)
-         //test_packets[packet_count_in].set_length (`BEATS_TO_BYTES({$random} % (space-3) + 3));
-	 test_packets[0].set_length(`BEATS_TO_BYTES('d128)); // fixed 128beat packet size
-         space = space - `BYTES_TO_BEATS(test_packets[packet_count_in].get_length);
+         //test_packets[packet_count_in].set_length (beats_to_bytes({$random} % (space-3) + 3));
+	 test_packets[0].set_length(beats_to_bytes('d128)); // fixed 128beat packet size
+         space = space - bytes_to_beats(test_packets[packet_count_in].get_length);
          // Generate ramped payload.
          test_packets[0].ramp;
 
          test_packets[0].rewind_payload;
-	 // Get 64b payload beats and pack them into two 32b FIFO entries				  
-         for (x = 0 ; x < (`BYTES_TO_BEATS(test_packets[packet_count_in].get_length) - 2) ; x = x + 1)
+	 // Get 64b payload beats and pack them into two 32b FIFO entries
+         for (x = 0 ; x < (bytes_to_beats(test_packets[packet_count_in].get_length) - 2) ; x = x + 1)
 	    begin
 		beat_in = test_packets[0].get_beat;
 	        push_fifo(beat_in[63:32],0);
 	        push_fifo(beat_in[31:0],0);
-            end				  
+            end
 
          while (space > 0) begin
             packet_count_in = packet_count_in + 1;
@@ -278,27 +273,27 @@ module axis_stream_to_pkt_unit_test;
             test_packets[packet_count_in].set_header(test_packets[packet_count_in-1].get_header);
             test_packets[packet_count_in].inc_seq_id;
             // Add delta to timestamp
-            test_packets[packet_count_in].set_timestamp(test_packets[packet_count_in].get_timestamp + 
-				  ((`BYTES_TO_BEATS(test_packets[packet_count_in].get_length)-2)*2)); // Add sample count of last packet
+            test_packets[packet_count_in].set_timestamp(test_packets[packet_count_in].get_timestamp +
+				  ((bytes_to_beats(test_packets[packet_count_in].get_length)-2)*2)); // Add sample count of last packet
             // Unsigned value constrained between min packet size and remaining buffer size.
             //test_packets[packet_count_in].set_length ('d128)); // fixed 128beat packet size
-            space = space - `BYTES_TO_BEATS(test_packets[packet_count_in].get_length);
-          
+            space = space - bytes_to_beats(test_packets[packet_count_in].get_length);
+
             // Generate ramped payload.
             test_packets[packet_count_in].ramp;
 
             test_packets[packet_count_in].rewind_payload;
-	    // Get 64b payload beats and pack them into two 32b FIFO entries					  
-            for (x = 0 ; x < (`BYTES_TO_BEATS(test_packets[packet_count_in].get_length) - 3) ; x = x + 1)
+	    // Get 64b payload beats and pack them into two 32b FIFO entries
+            for (x = 0 ; x < (bytes_to_beats(test_packets[packet_count_in].get_length) - 3) ; x = x + 1)
 	      begin
 		 beat_in = test_packets[packet_count_in].get_beat;
 	         push_fifo(beat_in[63:32],0);
-		 push_fifo(beat_in[31:0],0); 
-              end	
+		 push_fifo(beat_in[31:0],0);
+              end
 	    beat_in = test_packets[packet_count_in].get_beat;
 	    push_fifo(beat_in[63:32],0);
 	    if (space > 0)
-	      push_fifo(beat_in[31:0],0); 
+	      push_fifo(beat_in[31:0],0);
  	    else
 	      push_fifo(beat_in[31:0],1); // Set tlast on last sample
          end // while (space > 0)
@@ -307,7 +302,7 @@ module axis_stream_to_pkt_unit_test;
          // Bring CSRs to reset like values.
          ready_to_test <= 0;
          enable <= 0;
-         packet_size <= `BYTES_TO_BEATS(test_packets[0].get_length);
+         packet_size <= bytes_to_beats(test_packets[0].get_length);
          flow_id <= test_packets[0].get_flow_id;
          flow_id_changed <= 1;
 	 @(posedge clk);
@@ -315,14 +310,14 @@ module axis_stream_to_pkt_unit_test;
 	 reset_timestamp <= 1;
 	 @(posedge clk);
 	 reset_timestamp <= 0; // Starts timestamp counter running
-	 enable <= 1; // Starts packetization block running.	  
+	 enable <= 1; // Starts packetization block running.
          ready_to_test <= 1; // Modulates input data flow
-	
-         while (in_last != 1) 
-	   @(posedge clk);			  
 
-         `INFO("All test sample stream written to interface. Source thread exits.");				  
-         ready_to_test <= 0;            
+         while (in_last != 1)
+	   @(posedge clk);
+
+         `INFO("All test sample stream written to interface. Source thread exits.");
+         ready_to_test <= 0;
       end // block: mm_source_thread
 
       begin: pkt_sink_thread
@@ -332,12 +327,12 @@ module axis_stream_to_pkt_unit_test;
          // Access AXIS egress interface to get packets.
          //
          packet_count_out = 0;
-         
+
          while (packet_count_out <= packet_count_in)
            begin
               // Packet Header
 	      out.pull_beat(beat1,tlast_out);
-	      `FAIL_UNLESS(tlast_out === 1'b0);              
+	      `FAIL_UNLESS(tlast_out === 1'b0);
 	      out.pull_beat(beat2,tlast_out);
 	      `FAIL_UNLESS(tlast_out === 1'b0);
               // Compare received header with reference.
@@ -349,32 +344,32 @@ module axis_stream_to_pkt_unit_test;
               `FAIL_UNLESS(header_compare(test_packets[packet_count_out].get_header,header_out));
               // Get packet payload and compare with reference
               test_packets[packet_count_out].rewind_payload;
-              for (x = 0 ; x < (`BYTES_TO_BEATS(test_packets[packet_count_out].get_length) - 3) ; x = x + 1) begin
+              for (x = 0 ; x < (bytes_to_beats(test_packets[packet_count_out].get_length) - 3) ; x = x + 1) begin
             	 out.pull_beat(beat1,tlast_out);
-                 `FAIL_UNLESS(tlast_out === 1'b0);              
-                 `FAIL_UNLESS_EQUAL(beat1,test_packets[packet_count_out].get_beat);                 
-              end 
+                 `FAIL_UNLESS(tlast_out === 1'b0);
+                 `FAIL_UNLESS_EQUAL(beat1,test_packets[packet_count_out].get_beat);
+              end
               out.pull_beat(beat1,tlast_out);
-              `FAIL_UNLESS(tlast_out === 1'b1);              
-              `FAIL_UNLESS_EQUAL(beat1,test_packets[packet_count_out].get_beat);                               
+              `FAIL_UNLESS(tlast_out === 1'b1);
+              `FAIL_UNLESS_EQUAL(beat1,test_packets[packet_count_out].get_beat);
               packet_count_out = packet_count_out + 1;
            end // while (packet_count_out < packet_count_in)
          `INFO("All packetized sample payload received correctly, with correct header data.");
          disable watchdog_thread;
       end // block: pkt_sink_thread
-      
+
       begin : watchdog_thread
-         timeout = 100000;        
+         timeout = 100000;
          while(1) begin
             `FAIL_IF(timeout==0);
             timeout = timeout - 1;
-            @(posedge clk);         
-         end    
-      end    
-      
+            @(posedge clk);
+         end
+      end
+
    join
    `SVTEST_END
-	
+
  //-------------------------------------------------------------------------------
  // Valid input sample every other clock cycle. Timestamp initialized to 0.
  // Sample stream is ramp in I & Q
@@ -391,26 +386,26 @@ module axis_stream_to_pkt_unit_test;
          // Allocate packet and Initialize header: INT16_COMPLEX
          test_packets[0] = new;
          test_packets[0].init;
-         test_packets[0].set_flow_src(INPUT);
-         test_packets[0].set_flow_dst(OUTPUT);
+         test_packets[0].set_flow_src(SRC0);
+         test_packets[0].set_flow_dst(DST1);
 	 test_packets[packet_count_in].set_timestamp(1); // First sample arrives at timestamp 1
-	 
+
          // Unsigned value constrained between min packet size and buffer size.
          // (whole number of beats converted to bytes)
-         //test_packets[packet_count_in].set_length (`BEATS_TO_BYTES({$random} % (space-3) + 3));
-	 test_packets[0].set_length(`BEATS_TO_BYTES('d128)); // fixed 128beat packet size
-         space = space - `BYTES_TO_BEATS(test_packets[packet_count_in].get_length);
+         //test_packets[packet_count_in].set_length (beats_to_bytes({$random} % (space-3) + 3));
+	 test_packets[0].set_length(beats_to_bytes('d128)); // fixed 128beat packet size
+         space = space - bytes_to_beats(test_packets[packet_count_in].get_length);
          // Generate ramped payload.
          test_packets[0].ramp;
 
          test_packets[0].rewind_payload;
-	 // Get 64b payload beats and pack them into two 32b FIFO entries				  
-         for (x = 0 ; x < (`BYTES_TO_BEATS(test_packets[packet_count_in].get_length) - 2) ; x = x + 1)
+	 // Get 64b payload beats and pack them into two 32b FIFO entries
+         for (x = 0 ; x < (bytes_to_beats(test_packets[packet_count_in].get_length) - 2) ; x = x + 1)
 	    begin
 		beat_in = test_packets[0].get_beat;
 	        push_fifo(beat_in[63:32],0);
 	        push_fifo(beat_in[31:0],0);
-            end				  
+            end
 
          while (space > 0) begin
             packet_count_in = packet_count_in + 1;
@@ -421,27 +416,27 @@ module axis_stream_to_pkt_unit_test;
             test_packets[packet_count_in].set_header(test_packets[packet_count_in-1].get_header);
             test_packets[packet_count_in].inc_seq_id;
             // Add delta to timestamp
-            test_packets[packet_count_in].set_timestamp(test_packets[packet_count_in].get_timestamp + 
-				  ((`BYTES_TO_BEATS(test_packets[packet_count_in].get_length)-2)*4)); // Add sample count of last packet
+            test_packets[packet_count_in].set_timestamp(test_packets[packet_count_in].get_timestamp +
+				  ((bytes_to_beats(test_packets[packet_count_in].get_length)-2)*4)); // Add sample count of last packet
             // Unsigned value constrained between min packet size and remaining buffer size.
             //test_packets[packet_count_in].set_length ('d128)); // fixed 128beat packet size
-            space = space - `BYTES_TO_BEATS(test_packets[packet_count_in].get_length);
-          
+            space = space - bytes_to_beats(test_packets[packet_count_in].get_length);
+
             // Generate ramped payload.
             test_packets[packet_count_in].ramp;
 
             test_packets[packet_count_in].rewind_payload;
-	    // Get 64b payload beats and pack them into two 32b FIFO entries					  
-            for (x = 0 ; x < (`BYTES_TO_BEATS(test_packets[packet_count_in].get_length) - 3) ; x = x + 1)
+	    // Get 64b payload beats and pack them into two 32b FIFO entries
+            for (x = 0 ; x < (bytes_to_beats(test_packets[packet_count_in].get_length) - 3) ; x = x + 1)
 	      begin
 		 beat_in = test_packets[packet_count_in].get_beat;
 	         push_fifo(beat_in[63:32],0);
-		 push_fifo(beat_in[31:0],0); 
-              end	
+		 push_fifo(beat_in[31:0],0);
+              end
 	    beat_in = test_packets[packet_count_in].get_beat;
 	    push_fifo(beat_in[63:32],0);
 	    if (space > 0)
-	      push_fifo(beat_in[31:0],0); 
+	      push_fifo(beat_in[31:0],0);
  	    else
 	      push_fifo(beat_in[31:0],1); // Set tlast on last sample
          end // while (space > 0)
@@ -450,7 +445,7 @@ module axis_stream_to_pkt_unit_test;
          // Bring CSRs to reset like values.
          ready_to_test <= 0;
          enable <= 0;
-         packet_size <= `BYTES_TO_BEATS(test_packets[0].get_length);
+         packet_size <= bytes_to_beats(test_packets[0].get_length);
          flow_id <= test_packets[0].get_flow_id;
          flow_id_changed <= 1;
 	 @(posedge clk);
@@ -458,7 +453,7 @@ module axis_stream_to_pkt_unit_test;
 	 reset_timestamp <= 1;
 	 @(posedge clk);
 	 reset_timestamp <= 0; // Starts timestamp counter running
-	 enable <= 1; // Starts packetization block running.	  
+	 enable <= 1; // Starts packetization block running.
 	 @(posedge clk);
          ready_to_test <= 1;// Modulates input data flow
 
@@ -474,8 +469,8 @@ module axis_stream_to_pkt_unit_test;
 	 @(posedge clk);
 	 ready_to_test <= 1;
 	 @(posedge clk);
-         `INFO("All test sample stream written to interface. Source thread exits.");				  
-         ready_to_test <= 0;            
+         `INFO("All test sample stream written to interface. Source thread exits.");
+         ready_to_test <= 0;
       end // block: mm_source_thread
 
       begin: pkt_sink_thread
@@ -485,12 +480,12 @@ module axis_stream_to_pkt_unit_test;
          // Access AXIS egress interface to get packets.
          //
          packet_count_out = 0;
-         
+
          while (packet_count_out <= packet_count_in)
            begin
               // Packet Header
 	      out.pull_beat(beat1,tlast_out);
-	      `FAIL_UNLESS(tlast_out === 1'b0);              
+	      `FAIL_UNLESS(tlast_out === 1'b0);
 	      out.pull_beat(beat2,tlast_out);
 	      `FAIL_UNLESS(tlast_out === 1'b0);
               // Compare received header with reference.
@@ -502,35 +497,35 @@ module axis_stream_to_pkt_unit_test;
               `FAIL_UNLESS(header_compare(test_packets[packet_count_out].get_header,header_out));
               // Get packet payload and compare with reference
               test_packets[packet_count_out].rewind_payload;
-              for (x = 0 ; x < (`BYTES_TO_BEATS(test_packets[packet_count_out].get_length) - 3) ; x = x + 1) begin
+              for (x = 0 ; x < (bytes_to_beats(test_packets[packet_count_out].get_length) - 3) ; x = x + 1) begin
             	 out.pull_beat(beat1,tlast_out);
-                 `FAIL_UNLESS(tlast_out === 1'b0);              
-                 `FAIL_UNLESS_EQUAL(beat1,test_packets[packet_count_out].get_beat);                 
-              end 
+                 `FAIL_UNLESS(tlast_out === 1'b0);
+                 `FAIL_UNLESS_EQUAL(beat1,test_packets[packet_count_out].get_beat);
+              end
               out.pull_beat(beat1,tlast_out);
-              `FAIL_UNLESS(tlast_out === 1'b1);              
-              `FAIL_UNLESS_EQUAL(beat1,test_packets[packet_count_out].get_beat);                               
+              `FAIL_UNLESS(tlast_out === 1'b1);
+              `FAIL_UNLESS_EQUAL(beat1,test_packets[packet_count_out].get_beat);
               packet_count_out = packet_count_out + 1;
            end // while (packet_count_out < packet_count_in)
          `INFO("All packetized sample payload received correctly, with correct header data.");
          disable watchdog_thread;
       end // block: pkt_sink_thread
-      
+
       begin : watchdog_thread
-         timeout = 100000;        
+         timeout = 100000;
          while(1) begin
             `FAIL_IF(timeout==0);
             timeout = timeout - 1;
-            @(posedge clk);         
-         end    
-      end    
-      
+            @(posedge clk);
+         end
+      end
+
    join
    `SVTEST_END
 
   `SVUNIT_TESTS_END
 
-    
+
    // Task: idle_all()
    // Cause all AXIS buses to go idle.
    task idle_all();
@@ -551,14 +546,13 @@ module axis_stream_to_pkt_unit_test;
 	 load_tvalid <= 1;
 	 load_tdata <= data;
 	 load_tlast <= last;
-	 
+
 	 @(posedge clk);
 	 load_tvalid <= 0;
       end
    endtask
-	      
-	   
 
-   
+
+
+
 endmodule
-

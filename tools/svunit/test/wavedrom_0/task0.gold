@@ -1,6 +1,0 @@
-task task0();
-  step();
-  nextSamplePoint();
-  step();
-  nextSamplePoint();
-endtask

@@ -1,0 +1,196 @@
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg version="1.1"
+ width="600px" height="587px"
+ viewBox="0 0 600 587"
+ xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges"
+ stroke-width="1" text-rendering="geometricPrecision">
+<polygon fill="white" points="76,7 122,7 122,16 76,16"/>
+<text x="100" y="16" textLength="44" font-family="Helvetica" font-size="12" fill="black" text-anchor="middle">
+
+Network
+</text>
+<polygon fill="white" points="273,7 325,7 325,16 273,16"/>
+<text x="300" y="16" textLength="50" font-family="Helvetica" font-size="12" fill="black" text-anchor="middle">
+
+Deframer
+</text>
+<polygon fill="white" points="475,7 523,7 523,16 475,16"/>
+<text x="500" y="16" textLength="47" font-family="Helvetica" font-size="12" fill="black" text-anchor="middle">
+
+Samples
+</text>
+<line x1="100" y1="22" x2="100" y2="47" stroke="black"/>
+<line x1="300" y1="22" x2="300" y2="47" stroke="black"/>
+<line x1="500" y1="22" x2="500" y2="47" stroke="black"/>
+<line x1="100" y1="47" x2="100" y2="83" stroke="black"/>
+<line x1="300" y1="47" x2="300" y2="83" stroke="black"/>
+<line x1="500" y1="47" x2="500" y2="83" stroke="black"/>
+<polygon fill="#FFFF00" points="214,47 386,47 386,69 214,69"/>
+<polygon fill="#FFFF00" points="208,53 392,53 392,63 208,63"/>
+<circle fill="#FFFF00" cx="214" cy="53" r="6"/>
+<circle fill="#FFFF00" cx="386" cy="53" r="6"/>
+<circle fill="#FFFF00" cx="214" cy="63" r="6"/>
+<circle fill="#FFFF00" cx="386" cy="63" r="6"/>
+<line x1="214" y1="47" x2="386" y2="47" stroke="black"/>
+<line x1="214" y1="69" x2="386" y2="69" stroke="black"/>
+<line x1="208" y1="53" x2="208" y2="63" stroke="black"/>
+<line x1="392" y1="53" x2="392" y2="63" stroke="black"/>
+<path d="M 208 53 A6,6 0 0,1 214,47" stroke="black" fill="none"/><path d="M 386 47 A6,6 0 0,1 392,53" stroke="black" fill="none"/><path d="M 392 63 A6,6 0 0,1 386,69" stroke="black" fill="none"/><path d="M 214 69 A6,6 0 0,1 208,63" stroke="black" fill="none"/><polygon fill="#FFFF00" points="274,54 325,54 325,63 274,63"/>
+<text x="275" y="63" textLength="49" font-family="Helvetica" font-size="12" fill="black">
+TIME = 0
+</text>
+<line x1="100" y1="83" x2="100" y2="108" stroke="black" stroke-dasharray="2,2"/>
+<line x1="300" y1="83" x2="300" y2="108" stroke="black" stroke-dasharray="2,2"/>
+<line x1="500" y1="83" x2="500" y2="108" stroke="black" stroke-dasharray="2,2"/>
+<line x1="100" y1="108" x2="100" y2="155" stroke="black"/>
+<line x1="300" y1="108" x2="300" y2="155" stroke="black"/>
+<line x1="500" y1="108" x2="500" y2="155" stroke="black"/>
+<line x1="100" y1="124" x2="300" y2="132" stroke="black"/>
+<polygon fill="black" points="300,132 290,138 290,126"/>
+<polygon fill="white" points="133,113 265,113 265,122 133,122"/>
+<text x="134" y="122" textLength="130" font-family="Helvetica" font-size="12" fill="black">
+INT16_COMPLEX_EOB
+</text>
+<polygon fill="white" points="168,124 231,124 231,133 168,133"/>
+<text x="169" y="133" textLength="61" font-family="Helvetica" font-size="12" fill="black">
+ SEQ_ID=0
+</text>
+<polygon fill="white" points="165,135 233,135 233,144 165,144"/>
+<text x="166" y="144" textLength="66" font-family="Helvetica" font-size="12" fill="black">
+ TIME=2000
+</text>
+<line x1="100" y1="155" x2="100" y2="191" stroke="black"/>
+<line x1="300" y1="155" x2="300" y2="191" stroke="black"/>
+<line x1="500" y1="155" x2="500" y2="191" stroke="black"/>
+<polygon fill="#FFFF00" points="214,155 386,155 386,177 214,177"/>
+<polygon fill="#FFFF00" points="208,161 392,161 392,171 208,171"/>
+<circle fill="#FFFF00" cx="214" cy="161" r="6"/>
+<circle fill="#FFFF00" cx="386" cy="161" r="6"/>
+<circle fill="#FFFF00" cx="214" cy="171" r="6"/>
+<circle fill="#FFFF00" cx="386" cy="171" r="6"/>
+<line x1="214" y1="155" x2="386" y2="155" stroke="black"/>
+<line x1="214" y1="177" x2="386" y2="177" stroke="black"/>
+<line x1="208" y1="161" x2="208" y2="171" stroke="black"/>
+<line x1="392" y1="161" x2="392" y2="171" stroke="black"/>
+<path d="M 208 161 A6,6 0 0,1 214,155" stroke="black" fill="none"/><path d="M 386 155 A6,6 0 0,1 392,161" stroke="black" fill="none"/><path d="M 392 171 A6,6 0 0,1 386,177" stroke="black" fill="none"/><path d="M 214 177 A6,6 0 0,1 208,171" stroke="black" fill="none"/><polygon fill="#FFFF00" points="264,162 335,162 335,171 264,171"/>
+<text x="265" y="171" textLength="69" font-family="Helvetica" font-size="12" fill="black">
+TIME = 1000
+</text>
+<line x1="100" y1="191" x2="100" y2="216" stroke="black" stroke-dasharray="2,2"/>
+<line x1="300" y1="191" x2="300" y2="216" stroke="black" stroke-dasharray="2,2"/>
+<line x1="500" y1="191" x2="500" y2="216" stroke="black" stroke-dasharray="2,2"/>
+<line x1="100" y1="216" x2="100" y2="241" stroke="black"/>
+<line x1="300" y1="216" x2="300" y2="241" stroke="black"/>
+<line x1="500" y1="216" x2="500" y2="241" stroke="black"/>
+<line x1="50" y1="221" x2="550" y2="221" stroke="black" stroke-dasharray="2,2"/>
+<polygon fill="white" points="218,221 380,221 380,230 218,230"/>
+<text x="219" y="230" textLength="160" font-family="Helvetica" font-size="12" fill="black">
+Deframer waits for time match
+</text>
+<line x1="100" y1="241" x2="100" y2="266" stroke="black" stroke-dasharray="2,2"/>
+<line x1="300" y1="241" x2="300" y2="266" stroke="black" stroke-dasharray="2,2"/>
+<line x1="500" y1="241" x2="500" y2="266" stroke="black" stroke-dasharray="2,2"/>
+<line x1="100" y1="266" x2="100" y2="302" stroke="black"/>
+<line x1="300" y1="266" x2="300" y2="302" stroke="black"/>
+<line x1="500" y1="266" x2="500" y2="302" stroke="black"/>
+<polygon fill="#FFFF00" points="214,266 386,266 386,288 214,288"/>
+<polygon fill="#FFFF00" points="208,272 392,272 392,282 208,282"/>
+<circle fill="#FFFF00" cx="214" cy="272" r="6"/>
+<circle fill="#FFFF00" cx="386" cy="272" r="6"/>
+<circle fill="#FFFF00" cx="214" cy="282" r="6"/>
+<circle fill="#FFFF00" cx="386" cy="282" r="6"/>
+<line x1="214" y1="266" x2="386" y2="266" stroke="black"/>
+<line x1="214" y1="288" x2="386" y2="288" stroke="black"/>
+<line x1="208" y1="272" x2="208" y2="282" stroke="black"/>
+<line x1="392" y1="272" x2="392" y2="282" stroke="black"/>
+<path d="M 208 272 A6,6 0 0,1 214,266" stroke="black" fill="none"/><path d="M 386 266 A6,6 0 0,1 392,272" stroke="black" fill="none"/><path d="M 392 282 A6,6 0 0,1 386,288" stroke="black" fill="none"/><path d="M 214 288 A6,6 0 0,1 208,282" stroke="black" fill="none"/><polygon fill="#FFFF00" points="264,273 335,273 335,282 264,282"/>
+<text x="265" y="282" textLength="69" font-family="Helvetica" font-size="12" fill="black">
+TIME = 2000
+</text>
+<line x1="100" y1="302" x2="100" y2="338" stroke="black"/>
+<line x1="300" y1="302" x2="300" y2="338" stroke="black"/>
+<line x1="500" y1="302" x2="500" y2="338" stroke="black"/>
+<line x1="300" y1="313" x2="500" y2="321" stroke="black"/>
+<polygon fill="black" points="500,321 490,327 490,315"/>
+<polygon fill="white" points="376,307 422,307 422,316 376,316"/>
+<text x="377" y="316" textLength="44" font-family="Helvetica" font-size="12" fill="black">
+TX Data
+</text>
+<line x1="100" y1="338" x2="100" y2="374" stroke="black"/>
+<line x1="300" y1="338" x2="300" y2="374" stroke="black"/>
+<line x1="500" y1="338" x2="500" y2="374" stroke="black"/>
+<line x1="300" y1="349" x2="100" y2="357" stroke="black"/>
+<polygon fill="black" points="100,357 110,363 110,351"/>
+<polygon fill="white" points="175,343 224,343 224,352 175,352"/>
+<text x="176" y="352" textLength="47" font-family="Helvetica" font-size="12" fill="black">
+STATUS
+</text>
+<polygon fill="white" points="113,354 286,354 286,363 113,363"/>
+<text x="114" y="363" textLength="171" font-family="Helvetica" font-size="12" fill="black">
+ SEQ_ID=0, EOB for SEQ_ID=0
+</text>
+<line x1="100" y1="374" x2="100" y2="399" stroke="black"/>
+<line x1="300" y1="374" x2="300" y2="399" stroke="black"/>
+<line x1="500" y1="374" x2="500" y2="399" stroke="black"/>
+<line x1="100" y1="399" x2="100" y2="424" stroke="black" stroke-dasharray="2,2"/>
+<line x1="300" y1="399" x2="300" y2="424" stroke="black" stroke-dasharray="2,2"/>
+<line x1="500" y1="399" x2="500" y2="424" stroke="black" stroke-dasharray="2,2"/>
+<line x1="100" y1="424" x2="100" y2="460" stroke="black"/>
+<line x1="300" y1="424" x2="300" y2="460" stroke="black"/>
+<line x1="500" y1="424" x2="500" y2="460" stroke="black"/>
+<polygon fill="#FFFF00" points="214,424 386,424 386,446 214,446"/>
+<polygon fill="#FFFF00" points="208,430 392,430 392,440 208,440"/>
+<circle fill="#FFFF00" cx="214" cy="430" r="6"/>
+<circle fill="#FFFF00" cx="386" cy="430" r="6"/>
+<circle fill="#FFFF00" cx="214" cy="440" r="6"/>
+<circle fill="#FFFF00" cx="386" cy="440" r="6"/>
+<line x1="214" y1="424" x2="386" y2="424" stroke="black"/>
+<line x1="214" y1="446" x2="386" y2="446" stroke="black"/>
+<line x1="208" y1="430" x2="208" y2="440" stroke="black"/>
+<line x1="392" y1="430" x2="392" y2="440" stroke="black"/>
+<path d="M 208 430 A6,6 0 0,1 214,424" stroke="black" fill="none"/><path d="M 386 424 A6,6 0 0,1 392,430" stroke="black" fill="none"/><path d="M 392 440 A6,6 0 0,1 386,446" stroke="black" fill="none"/><path d="M 214 446 A6,6 0 0,1 208,440" stroke="black" fill="none"/><polygon fill="#FFFF00" points="264,431 335,431 335,440 264,440"/>
+<text x="265" y="440" textLength="69" font-family="Helvetica" font-size="12" fill="black">
+TIME = 6000
+</text>
+<line x1="100" y1="460" x2="100" y2="507" stroke="black"/>
+<line x1="300" y1="460" x2="300" y2="507" stroke="black"/>
+<line x1="500" y1="460" x2="500" y2="507" stroke="black"/>
+<line x1="100" y1="476" x2="300" y2="484" stroke="black"/>
+<polygon fill="black" points="300,484 290,490 290,478"/>
+<polygon fill="white" points="133,465 265,465 265,474 133,474"/>
+<text x="134" y="474" textLength="130" font-family="Helvetica" font-size="12" fill="black">
+INT16_COMPLEX_EOB
+</text>
+<polygon fill="white" points="168,476 231,476 231,485 168,485"/>
+<text x="169" y="485" textLength="61" font-family="Helvetica" font-size="12" fill="black">
+ SEQ_ID=1
+</text>
+<polygon fill="white" points="165,487 233,487 233,496 165,496"/>
+<text x="166" y="496" textLength="66" font-family="Helvetica" font-size="12" fill="black">
+ TIME=5000
+</text>
+<line x1="100" y1="507" x2="100" y2="554" stroke="black"/>
+<line x1="300" y1="507" x2="300" y2="554" stroke="black"/>
+<line x1="500" y1="507" x2="500" y2="554" stroke="black"/>
+<line x1="300" y1="523" x2="100" y2="531" stroke="black"/>
+<polygon fill="black" points="100,531 110,537 110,525"/>
+<polygon fill="white" points="175,512 224,512 224,521 175,521"/>
+<text x="176" y="521" textLength="47" font-family="Helvetica" font-size="12" fill="black">
+STATUS
+</text>
+<polygon fill="white" points="168,523 231,523 231,532 168,532"/>
+<text x="169" y="532" textLength="61" font-family="Helvetica" font-size="12" fill="black">
+ SEQ_ID=1
+</text>
+<polygon fill="white" points="118,534 280,534 280,543 118,543"/>
+<text x="119" y="543" textLength="160" font-family="Helvetica" font-size="12" fill="black">
+ TIME_ERROR for SEQ_ID=1
+</text>
+<line x1="100" y1="554" x2="100" y2="579" stroke="black"/>
+<line x1="300" y1="554" x2="300" y2="579" stroke="black"/>
+<line x1="500" y1="554" x2="500" y2="579" stroke="black"/>
+<line x1="100" y1="565" x2="100" y2="587" stroke="black"/>
+<line x1="300" y1="565" x2="300" y2="587" stroke="black"/>
+<line x1="500" y1="565" x2="500" y2="587" stroke="black"/>
+</svg>

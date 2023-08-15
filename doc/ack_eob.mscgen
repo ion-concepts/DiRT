@@ -1,0 +1,18 @@
+# DRaT
+# Packet Flow to generate ACK_EOB at Sink
+#
+msc {
+ arcgradient = 8;
+ #hscale="1.5";
+
+ a [label="Network"],b [label="Deframer"],c [label="Samples"];
+ |||;
+ a=>b [label="INT16_COMPLEX\n SEQ_ID=0"];
+ b=>c [label="Sample Data"];
+ a=>b [label="INT16_COMPLEX_EOB\n SEQ_ID=1"];
+ b=>c [label="Sample Data"];
+ a<=b [label="Status\n SEQ_ID=0, ACK_EOB for SEQ_ID=1"];
+ a=>b [label="INT16_COMPLEX\n SEQ_ID=0"];
+ b=>c [label="Sample Data"];
+|||;
+}
