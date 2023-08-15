@@ -43,19 +43,19 @@ module axis_stream_to_pkt_backpressured_unit_test;
    pkt_stream_t axis_response_post(.clk(clk));
 
    
-   logic  enable_in;
+   logic  enable;
    // Write this register with start time to annotate into bursts first packet.
-   logic [63:0] start_time_in;
+   logic [63:0] start_time;
    // Packet size expressed in number of samples
-   logic [13:0] packet_size_in;
+   logic [13:0] packet_size;
    // DRaT Flow ID for this flow (union of src + dst)
-   logic [31:0] flow_id_in; 
-   // Time increment per packet of size packet_size_in
-   logic [15:0] time_per_pkt_in;
+   logic [31:0] flow_id; 
+   // Time increment per packet of size packet_size
+   logic [15:0] time_per_pkt;
    // Number of samples in a burst. Write to zero for infinite burst.
-   logic [47:0] burst_size_in;
+   logic [47:0] burst_size;
    // Assert this signal for a single cycle to trigger an async return to idle.
-   logic        abort_in;
+   logic        abort;
 
    // Declarations for Stimulus Thread(s)
    logic        enable_stimulus;
@@ -127,19 +127,19 @@ module axis_stream_to_pkt_backpressured_unit_test;
       //-------------------------------------------------------------------------------
       // CSR registers
       //-------------------------------------------------------------------------------
-      .enable_in(enable_in),
-      .start_time_in(start_time_in),
-      .packet_size_in(packet_size_in), // Packet size expressed in 64bit words including headers
-      .flow_id_in(flow_id_in), // DRaT Flow ID for this flow (union of src + dst)
-      .time_per_pkt_in(time_per_pkt_in),
-      .burst_size_in(burst_size_in),
-      .abort_in(abort_in),
+      .enable(enable),
+      .start_time(start_time),
+      .packet_size(packet_size), // Packet size expressed in 64bit words including headers
+      .flow_id(flow_id), // DRaT Flow ID for this flow (union of src + dst)
+      .time_per_pkt(time_per_pkt),
+      .burst_size(burst_size),
+      .abort(abort),
       // Status Flags
       .idle_out(idle),
       //-------------------------------------------------------------------------------
       // Streaming sample Input Bus
       //-------------------------------------------------------------------------------
-      .axis_stream_in(axis_stimulus_gated),
+      .axis_stream(axis_stimulus_gated),
       //-------------------------------------------------------------------------------
       // AXIS Output Bus
       //-------------------------------------------------------------------------------
@@ -188,13 +188,13 @@ module axis_stream_to_pkt_backpressured_unit_test;
       /* Place Setup Code Here */
 
       rst <= 1'b1;
-      enable_in <= 0;
-      start_time_in <= 0; // Write this register with start time to annotate into bursts first packet.
-      packet_size_in <= 0; // Packet size expressed in number of samples
-      flow_id_in <= 0; // DRaT Flow ID for this flow (union of src + dst)
-      time_per_pkt_in <= 0; // Time increment per packet of size packet_size_in
-      burst_size_in <= 0; // Number of samples in a burst. Write to zero for infinite burst.
-      abort_in <= 0; // Assert this signal for a single cycle to trigger an async return to idle.
+      enable <= 0;
+      start_time <= 0; // Write this register with start time to annotate into bursts first packet.
+      packet_size <= 0; // Packet size expressed in number of samples
+      flow_id <= 0; // DRaT Flow ID for this flow (union of src + dst)
+      time_per_pkt <= 0; // Time increment per packet of size packet_size
+      burst_size <= 0; // Number of samples in a burst. Write to zero for infinite burst.
+      abort <= 0; // Assert this signal for a single cycle to trigger an async return to idle.
       
       // Open all valves by default
       enable_stimulus <= 1'b1;
@@ -250,13 +250,13 @@ module axis_stream_to_pkt_backpressured_unit_test;
    fork
       begin: load_stimulus
          // Setup this test:                   
-         enable_in <= 0;
-         start_time_in <= 'd1000; 
-         packet_size_in <= 'd10; 
-         flow_id_in <= {INPUT,OUTPUT}; 
-         time_per_pkt_in <= 10;
-         burst_size_in <= 100;
-         abort_in <= 0;
+         enable <= 0;
+         start_time <= 'd1000; 
+         packet_size <= 'd10; 
+         flow_id <= {INPUT,OUTPUT}; 
+         time_per_pkt <= 10;
+         burst_size <= 100;
+         abort <= 0;
          // Response threads can't run until stimulus loaded.
          ready_to_test <= 0;
          // Close valve after stimulus buffer
@@ -273,7 +273,7 @@ module axis_stream_to_pkt_backpressured_unit_test;
          //
          @(negedge clk);
          // Enable configured sub-system operation
-         enable_in <= 1;
+         enable <= 1;
          @(negedge clk);
          // 100% duty cycle on AXIS input bus.
          enable_stimulus <= 1'b1;

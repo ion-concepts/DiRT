@@ -50,13 +50,13 @@ module axis_stream_to_pkt_backpressured
     input logic        clk,
     input logic        rst,
     // Control signals
-    input logic        enable_in,
-    input logic [63:0] start_time_in, // Write this register with start time to annotate into bursts first packet.
-    input logic [13:0] packet_size_in, // Packet size expressed in number of samples
-    input logic [31:0] flow_id_in, // DRaT Flow ID for this flow (union of src + dst)
-    input logic [15:0] time_per_pkt_in, // Time increment per packet of size packet_size_in
-    input logic [47:0] burst_size_in, // Number of samples in a burst. Write to zero for infinite burst.
-    input logic        abort_in, // Assert this signal for a single cycle to trigger an async return to idle.
+    input logic        enable,
+    input logic [63:0] start_time, // Write this register with start time to annotate into bursts first packet.
+    input logic [13:0] packet_size, // Packet size expressed in number of samples
+    input logic [31:0] flow_id, // DRaT Flow ID for this flow (union of src + dst)
+    input logic [15:0] time_per_pkt, // Time increment per packet of size packet_size
+    input logic [47:0] burst_size, // Number of samples in a burst. Write to zero for infinite burst.
+    input logic        abort, // Assert this signal for a single cycle to trigger an async return to idle.
     // Status Flags
     output logic       idle_out, // Assert when state machine is idle
     //
@@ -80,7 +80,7 @@ module axis_stream_to_pkt_backpressured
    logic [13:0]        input_count; // Counting in 32bit INT16_COMPLEX
    
    always_comb begin
-      end_of_packet = (input_count >= packet_size_in);
+      end_of_packet = (input_count >= packet_size);
    end
 
    logic end_of_burst;
@@ -89,9 +89,9 @@ module axis_stream_to_pkt_backpressured
    // EOB asserted as the remaining samples in the burst falls below
    // the traget size for packets, meaning this will be the last one.
    // NOTE: We override this logic for an "inifinite burst" which is
-   // programmed as a burst_szie_in of 0.
+   // programmed as a burst_size of 0.
    always_comb begin
-      end_of_burst = (burst_count <= packet_size_in) && (burst_size_in != 0);
+      end_of_burst = (burst_count <= packet_size) && (burst_size != 0);
    end
 
    logic               ingress_beat;
@@ -104,7 +104,7 @@ module axis_stream_to_pkt_backpressured
    wire                     sfifo_not_full;
    wire                     tfifo_not_full;
    always_comb begin
-      axis_stream_in.tready = sfifo_not_full && tfifo_not_full && enable_in;
+      axis_stream_in.tready = sfifo_not_full && tfifo_not_full && enable;
    end
 
    //-----------------------------------------------------------------------------
@@ -122,24 +122,24 @@ module axis_stream_to_pkt_backpressured
    always_ff @(posedge clk)
      if (rst) begin
         burst_state <= S_NEW_BURST;
-        burst_count <= burst_size_in;
+        burst_count <= burst_size;
      end else begin
         case(burst_state)
           //
           S_NEW_BURST: begin
-             if (!enable_in) begin
+             if (!enable) begin
                 burst_state <= S_NEW_BURST;
-                burst_count <= burst_size_in;
+                burst_count <= burst_size;
              end else  if (ingress_beat) begin
                 // First beat of first packet of new burst
-                if (burst_size_in != 0) begin
+                if (burst_size != 0) begin
                    // Allow for infinite burst.
                    burst_count <= burst_count - 1;
                 end
                 if (burst_count == 1) begin
                    // EOB - Corner case 1 beat burst
                    burst_state <= S_NEW_BURST;
-                   burst_count <= burst_size_in;
+                   burst_count <= burst_size;
                    // TODO: GO IDLE HERE IF NOT CHAINED.
                 end else begin
                    // Move to active Burst state
@@ -149,14 +149,14 @@ module axis_stream_to_pkt_backpressured
           end // case: S_NEW_BURST
           //
           S_IN_BURST: begin
-             if (burst_size_in != 0) begin
+             if (burst_size != 0) begin
                 // Allow for infinite burst.
                 burst_count <= burst_count - 1;
              end
              if (burst_count == 1) begin
                 // EOB
                 burst_state <= S_NEW_BURST;
-                burst_count <= burst_size_in;
+                burst_count <= burst_size;
                 // TODO: GO IDLE HERE IF NOT CHAINED.
              end else begin
                 // Stay in active Burst state
@@ -182,11 +182,11 @@ module axis_stream_to_pkt_backpressured
           //
           S_INPUT_IDLE: begin
              input_count <= 1; // Samples are 32bits. Preload with 1 to account for 1 sample in flight.
-             if (!enable_in) begin
+             if (!enable) begin
                 input_state <= S_INPUT_IDLE;
              end else if (ingress_beat) begin
                 input_count <= input_count + 1'b1;
-                if (input_count >= packet_size_in) begin
+                if (input_count >= packet_size) begin
                    // Corner case - 1 sample packet config
                    input_state <= S_INPUT_IDLE;
                 end else begin
@@ -237,9 +237,9 @@ module axis_stream_to_pkt_backpressured
 
    //-----------------------------------------------------------------------------
    //
-   // Buffer snapshots of current_time. Load externally supplied "start_time_in" at
+   // Buffer snapshots of current_time. Load externally supplied "start_time" at
    // first beat of first packet of new burst, then first beat of every subsequent packet
-   // add the "time_per_packet" increment, which through careful manipulation of "packet_size_in"
+   // add the "time_per_packet" increment, which through careful manipulation of "packet_size"
    // caters for nominal sample rates that are not simple integer decimations of the clock speed.
    // The packet_time is inserted into the time_fifo as the last sample of a "to-yet-be-framed" packet
    // is placed into the sample_fifo.
@@ -254,13 +254,13 @@ module axis_stream_to_pkt_backpressured
         packet_time <= 64'h0;
      end else if ((input_state==S_INPUT_IDLE) && (burst_state == S_NEW_BURST) && ingress_beat) begin
         // Start of first packet in a new burst.
-        packet_time <= start_time_in;
+        packet_time <= start_time;
      end else if ((input_state==S_INPUT_IDLE) && ingress_beat) begin
         // Start of new packet within burst, add per packet time increment.
-        // Note that the only time packets are not of length "packet_size_in"
-        // is for an EOB packet or an Async abort_in (i.e) the last packet
+        // Note that the only time packets are not of length "packet_size"
+        // is for an EOB packet or an Async abort (i.e) the last packet
         // So we never have to calculate a custom sized packet time increment.
-        packet_time <= packet_time + time_per_pkt_in;
+        packet_time <= packet_time + time_per_pkt;
      end
 
    // Packet size calculation in 32b samples.
@@ -289,8 +289,8 @@ module axis_stream_to_pkt_backpressured
       // many orders of magnitude smaller than this limit)
       .in_tdata({end_of_burst,input_count_plus_header,packet_time}),
       // If upstream can advance by one beat and we have reach the threshold size for a packet
-      // TODO: Will need hooks here for burst end or abort_in
-      .in_tvalid(end_of_packet && ingress_beat && enable_in),
+      // TODO: Will need hooks here for burst end or abort
+      .in_tvalid(end_of_packet && ingress_beat && enable),
       .in_tready(tfifo_not_full),
 
       // Output AXIS bus
@@ -333,7 +333,7 @@ module axis_stream_to_pkt_backpressured
 
    // We insert the boolean result of the packet_size threshold test as the TLAST bit
    // to mark the last beat of each packet we will form.
-   // TODO: Will have to revisit this to add EOB and abort_in functionality to form TLAST also.
+   // TODO: Will have to revisit this to add EOB and abort functionality to form TLAST also.
 
    // Unused
    wire [SAMPLE_FIFO_SIZE:0] space_sample, occupied_sample;
@@ -462,7 +462,7 @@ module axis_stream_to_pkt_backpressured
    always_ff @(posedge clk)
      if (rst)
        seq_id <= 0;
-     else if (!enable_in)
+     else if (!enable)
        seq_id <= 0;
      else if (axis_pfifo.tvalid && axis_pfifo.tready && axis_pfifo.tlast)
        seq_id <= seq_id + 1'b1;
@@ -507,7 +507,7 @@ module axis_stream_to_pkt_backpressured
    always_comb
      case(output_state)
        S_OUTPUT_HEADER: begin
-          axis_pfifo.tdata = {(tfifo_tdata[78] ? packet_type_eob : packet_type),seq_id,tfifo_tdata[77:64],2'b00,flow_id_in};
+          axis_pfifo.tdata = {(tfifo_tdata[78] ? packet_type_eob : packet_type),seq_id,tfifo_tdata[77:64],2'b00,flow_id};
           axis_pfifo.tvalid = tfifo_tvalid ;
           axis_pfifo.tlast = 1'b0;
           tfifo_tready = 1'b0;
@@ -530,7 +530,7 @@ module axis_stream_to_pkt_backpressured
 
        default: begin
           // Default to S_OUTPUT_HEADER
-          axis_pfifo.tdata = {packet_type,seq_id,tfifo_tdata[76:64],3'b000,flow_id_in};
+          axis_pfifo.tdata = {packet_type,seq_id,tfifo_tdata[76:64],3'b000,flow_id};
           axis_pfifo.tvalid = tfifo_tvalid;
           axis_pfifo.tlast = 1'b0;
           tfifo_tready = 1'b0;
@@ -566,7 +566,7 @@ module axis_stream_to_pkt_backpressured
      if (rst) begin
         idle_out <= 1'b1;
      end else begin
-        idle_out <= (~axis_pkt_out.tvalid) && (~enable_in) && (~axis_pfifo.tvalid) 
+        idle_out <= (~axis_pkt_out.tvalid) && (~enable) && (~axis_pfifo.tvalid) 
           && (~tfifo_tvalid) && (input_state == S_INPUT_IDLE) && (burst_state == S_NEW_BURST);
      end
 
