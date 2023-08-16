@@ -10,6 +10,7 @@
 #-----------------------------------------------------------------------------
 
 DIRT_AXIS_SRCS = $(abspath $(addprefix $(DIRT_DIR)/lib/axis/, \
+axis_pkt_to_stream_pkg.sv \
 axis_concat_data.sv \
 axis_deframer.sv \
 axis_demux4.sv \
@@ -33,7 +34,6 @@ axis_packet_fifo.sv \
 axis_packet_fifo_wrapper.sv \
 axis_pkt_to_mm.sv \
 axis_pkt_to_stream.sv \
-axis_pkt_to_stream_pkg.sv \
 axis_siggen_pkg.sv \
 axis_siggen.sv \
 axis_status_report.sv \
