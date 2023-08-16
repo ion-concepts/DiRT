@@ -55,7 +55,7 @@ module dsp_1_channel
     // Status Flags
     output logic       csr_stream_to_pkt_idle, // Assert when state machine is idle
     // System Time Output
-    output logic [63:0]  system_time,
+    input logic [63:0]  system_time,
     // RX sample Input Bus
     axis_t.slave axis_rx_sample,
     // TX Sample Output Bus
@@ -66,52 +66,7 @@ module dsp_1_channel
     axis_t.master axis_rx_packet
     );
 
-   
-   //-----------------------------------------------------------------------------
-   //
-   // Time
-   //
-   // Single instance of time_source per FPGA provides system time for global use.
-   // Should run on sample clock (or decimated version via RFDC)
-   //-------------------------------------------------------------------------------
-  
-    always_ff @(posedge clk) begin
-        if (rst) begin
-            system_time <= 0;
-        end else begin
-            system_time <= system_time + 1;
-        end
-    end
-   /*
-      time_source time_source_i0
-        (
-         .clk(clk),
-         .rst(rst),
-
-         //
-         // CSR interface
-         //
-         .set_time_high_in(csr_set_time_high), // Assumed to be pre-loaded & stable before sync armed.
-         .set_time_low_in(csr_set_time_low),  // Assumed to be pre-loaded & stable before sync armed.
-         .event_time_high_out(csr_event_time_high),
-         .event_time_low_out(csr_event_time_low),
-         .trigger_immediate_in(csr_trigger_immediate),
-         .sync0_enable_in(csr_sync0_enable),
-         .sync0_falling_in(csr_sync0_falling),
-         .sync1_enable_in(csr_sync1_enable),
-         .sync1_falling_in(csr_sync1_falling),
-         .control_event_in(csr_control_event), // Pulses one cycle asserted same cycle new data loaded in control.
-         //
-         // Event triggers
-         //
-         .sync0_in(sync),
-         .sync1_in(sync),
-         //
-         // Timestamp output
-         //
-         .current_time_out(system_time)
-         );
-   */
+ 
    //-----------------------------------------------------------------------------
    //
    // Tx
