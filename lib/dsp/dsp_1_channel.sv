@@ -253,7 +253,7 @@ module dsp_1_channel
    axis_mux4_rx_packet_i1 (
                         .clk(clk),
                         .rst(rst),
-                        .in0_axis(axis_tx_status_mux),
+                        .in0_axis(axis_tx_status),
                         .in1_axis(axis_rx_data_fifo),
                         .in2_axis(axis_null_src2),
                         .in3_axis(axis_null_src3),
