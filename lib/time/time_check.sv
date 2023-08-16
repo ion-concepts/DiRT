@@ -17,13 +17,13 @@ module time_check
      input logic  clk,
      input logic  rst,
      // Current system time
-     input [63:0] current_time_in,
+     input [63:0] current_time,
      // Time stamp to compare
-     input [63:0] event_time_in,
+     input [63:0] event_time,
      // Flags
-     output logic early_out,
-     output logic now_out,
-     output logic late_out
+     output logic early,
+     output logic now,
+     output logic late
      );
 
     //
@@ -32,9 +32,9 @@ module time_check
     // pipelined logic to close high speed clock timing.
     //
     always_comb begin
-        now_out = (current_time_in == event_time_in);
-        late_out = (current_time_in > event_time_in);
-        early_out = !now_out && !late_out;
+        now = (current_time == event_time);
+        late = (current_time > event_time);
+        early = !now && !late;
     end
 
     //
@@ -47,14 +47,14 @@ module time_check
      if (rst) begin
      time_delta <= 64'b0;
       end else begin
-     time_delta <= event_time_in - current_time_in;
+     time_delta <= event_time - current_time;
       end
    end
 
      always_comb begin
-     now_out = ~(|time_delta);
-     late_out = time_delta[63];
-     early_out = !now_out && !late_out;
+     now = ~(|time_delta);
+     late = time_delta[63];
+     early = !now && !late;
    end
      */
 
