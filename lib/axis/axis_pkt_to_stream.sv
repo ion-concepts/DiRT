@@ -117,7 +117,9 @@ module axis_pkt_to_stream
                          .clk(clk),
                          .rst(rst),
                          .in_axis(axis_tail),
-                         .out_axis(axis_head)
+                         .out_axis(axis_head),
+                         .space(),
+                         .occupied()
                          );
 
 
@@ -179,6 +181,7 @@ module axis_pkt_to_stream
                              .rst(rst),
                              .current_time(current_time),
                              .event_time(axis_head.tdata[127:64]),
+                             .early(),
                              .now(now),
                              .late(late)
                              );

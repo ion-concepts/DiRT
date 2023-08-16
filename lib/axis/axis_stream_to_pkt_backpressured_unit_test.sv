@@ -135,7 +135,7 @@ module axis_stream_to_pkt_backpressured_unit_test;
       .burst_size(burst_size),
       .abort(abort),
       // Status Flags
-      .idle_out(idle),
+      .idle(idle),
       //-------------------------------------------------------------------------------
       // Streaming sample Input Bus
       //-------------------------------------------------------------------------------

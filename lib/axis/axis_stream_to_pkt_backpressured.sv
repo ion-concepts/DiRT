@@ -58,7 +58,7 @@ module axis_stream_to_pkt_backpressured
     input logic [47:0] burst_size, // Number of samples in a burst. Write to zero for infinite burst.
     input logic        abort, // Assert this signal for a single cycle to trigger an async return to idle.
     // Status Flags
-    output logic       idle_out, // Assert when state machine is idle
+    output logic       idle, // Assert when state machine is idle
     //
     // Streaming IQ Sample bus.
     // 16bit complex samples, AXIS protocol.
@@ -564,9 +564,9 @@ module axis_stream_to_pkt_backpressured
    //-----------------------------------------------------------------------------
    always_ff @(posedge clk)
      if (rst) begin
-        idle_out <= 1'b1;
+        idle <= 1'b1;
      end else begin
-        idle_out <= (~axis_pkt_out.tvalid) && (~enable) && (~axis_pfifo.tvalid) 
+        idle <= (~axis_pkt_out.tvalid) && (~enable) && (~axis_pfifo.tvalid) 
           && (~tfifo_tvalid) && (input_state == S_INPUT_IDLE) && (burst_state == S_NEW_BURST);
      end
 
