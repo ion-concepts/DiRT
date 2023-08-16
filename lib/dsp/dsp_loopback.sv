@@ -31,7 +31,7 @@ module dsp_loopback
    always_comb begin
       axis_stream_out.tdata = axis_stream_in.tdata;
       axis_stream_out.tvalid = strobe;
-      axis_stream_in.tready = strone;
+      axis_stream_in.tready = strobe;
    end
 
    // Evey time count wraps strobe is asserted for 1 cycle.
