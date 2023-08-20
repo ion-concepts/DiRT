@@ -11,6 +11,7 @@
 // License: CERN-OHL-P (See LICENSE.md)
 //-----------------------------------------------------------------------------
 
+
 module dsp_loopback
   #(
     parameter COUNT_SIZE = 8
@@ -26,14 +27,18 @@ module dsp_loopback
 
    logic [COUNT_SIZE-1:0] count;
    logic                  strobe;
-   
-   
+   logic [15:0]           sample;
+
+
+
    always_comb begin
-      axis_stream_out.tdata = axis_stream_in.tdata;
+      //axis_stream_out.tdata = axis_stream_in.tdata;
+      axis_stream_out.tdata = {sample,sample};
       axis_stream_out.tvalid = strobe;
       axis_stream_in.tready = strobe;
    end
 
+/*
    // Evey time count wraps strobe is asserted for 1 cycle.
    always_ff @(posedge clk)
      if (rst) begin
@@ -46,5 +51,22 @@ module dsp_loopback
           strobe <= 0;
         count <= count + 1;
      end
-   
+ */
+   // Every time count wraps strobe is asserted for 1 cycle.
+
+   always_ff @(posedge clk)
+     if (rst) begin
+        strobe <= 0;
+        count <= 0;
+        sample <= 0;
+     end else begin
+        if (count == 0) begin
+           strobe <= 1;
+           sample <= sample + 1;
+        end else begin
+          strobe <= 0;
+        end
+        count <= count + 1;
+     end
+
 endmodule

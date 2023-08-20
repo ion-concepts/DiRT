@@ -12,7 +12,7 @@
 //-----------------------------------------------------------------------------
 `timescale 1ns/1ps
 
-module dsp_1_channel 
+module dsp_1_channel
   #(
     parameter TX_DATA_FIFO_SIZE = 12,  // Must be substantial for high TX rates and large MTU's
     parameter TX_STATUS_FIFO_SIZE = 5, // Default to SRL32 implementation
@@ -40,8 +40,6 @@ module dsp_1_channel
     input logic        csr_tx_error_policy_next_packet,
     // Enable stream_to_pkt block
     input logic        csr_stream_to_pkt_enable,
-    // Write this register with start time to annotate into bursts first packet.
-    input logic [63:0] csr_rx_start_time,
     // Packet size expressed in number of samples
     input logic [13:0] csr_rx_packet_size,
     // DRaT Flow ID for this flow (union of src + dst)
@@ -66,7 +64,9 @@ module dsp_1_channel
     axis_t.master axis_rx_packet
     );
 
- 
+   wire [63:0] probe ; // Debug
+   wire        run;
+
    //-----------------------------------------------------------------------------
    //
    // Tx
@@ -79,10 +79,10 @@ module dsp_1_channel
    axis_t #(.WIDTH(64)) axis_null_src0(.clk(clk));
    axis_t #(.WIDTH(64)) axis_null_src1(.clk(clk));
    axis_t #(.WIDTH(64)) axis_null_src2(.clk(clk));
-   axis_t #(.WIDTH(64)) axis_null_src3(.clk(clk));   
+   axis_t #(.WIDTH(64)) axis_null_src3(.clk(clk));
    axis_t #(.WIDTH(64)) axis_tx_status_mux(.clk(clk));
-  
-   
+
+
 
 
    //-------------------------------------------------------------------------------
@@ -134,7 +134,7 @@ module dsp_1_channel
       // Stream oriented raw IQ samples out
       .axis_stream(axis_tx_sample)
       );
-   
+
    //-------------------------------------------------------------------------------
    // Mux and Buffer status packets generated as part of the unpacking process.
    // These flow back upstream to the flow source
@@ -186,7 +186,7 @@ module dsp_1_channel
    //-------------------------------------------------------------------------------
    axis_t #(.WIDTH(64)) axis_rx_data(.clk(clk));
    axis_t #(.WIDTH(64)) axis_rx_data_fifo(.clk(clk));
-   
+
    axis_stream_to_pkt_backpressured
      #(
        .TIME_FIFO_SIZE(RX_TIME_FIFO_SIZE),
@@ -202,7 +202,7 @@ module dsp_1_channel
       // CSR registers
       //-------------------------------------------------------------------------------
       .enable(csr_stream_to_pkt_enable),
-      .start_time(csr_rx_start_time),
+      .start_time(system_time),
       .packet_size(csr_rx_packet_size),
       .flow_id(csr_rx_flow_id),
       .time_per_pkt(csr_rx_time_per_pkt),
@@ -213,11 +213,11 @@ module dsp_1_channel
       //-------------------------------------------------------------------------------
       // Streaming sample Input Bus
       //-------------------------------------------------------------------------------
-      .axis_stream_in(axis_rx_sample),
+      .axis_stream(axis_rx_sample),
       //-------------------------------------------------------------------------------
       // AXIS Output Bus
       //-------------------------------------------------------------------------------
-      .axis_pkt_out(axis_rx_data)
+      .axis_pkt(axis_rx_data)
       );
 
    axis_fifo_wrapper  #(
@@ -259,5 +259,113 @@ module dsp_1_channel
                         .in3_axis(axis_null_src3),
                         .out_axis(axis_rx_packet)
                         );
-   
-endmodule 
+    //-------------------------------------------------------------------------------
+   // Debug Only below
+   //-------------------------------------------------------------------------------
+   //assign probe = 64'h0;
+/*
+   assign probe[0] =  axis_tx_sample.tvalid;
+   assign probe[1] = axis_tx_sample.tready;
+   assign probe[2] =  axis_tx_sample.tlast;
+   assign probe[10:3] = axis_tx_sample.tdata[7:0];
+
+   assign probe[11] = axis_tx_packet_fifo.tvalid;
+   assign probe[12] = axis_tx_packet_fifo.tready;
+   assign probe[13] = axis_tx_packet_fifo.tlast;
+   assign probe[21:14] = axis_tx_packet_fifo.tdata[7:0];
+
+   assign probe[22] = axis_rx_data.tvalid;
+   assign probe[23] = axis_rx_data.tready;
+   assign probe[24] = axis_rx_data.tlast;
+   assign probe[32:25] = axis_rx_data.tdata[7:0];
+
+   assign probe[33] = csr_stream_to_pkt_enable;
+   assign probe[34] = csr_stream_to_pkt_idle;
+
+   assign probe[42:35] = system_time[7:0];
+
+   assign probe[56:43] = csr_rx_packet_size;
+
+   assign probe[57] = csr_tx_deframer_enable;
+   assign probe[58] = csr_tx_status_enable;
+   assign probe[59] = csr_tx_consumption_enable;
+   assign probe[60] = csr_tx_control_enable;
+   assign probe[61] = run;
+
+
+
+
+   assign probe[63:62] = 0;
+
+
+
+   ila_64 ila_64_i0 (
+	.clk(clk), // input wire clk
+
+	.probe0(probe[0]), // input wire [0:0]  probe0
+	.probe1(probe[1]), // input wire [0:0]  probe1
+	.probe2(probe[2]), // input wire [0:0]  probe2
+	.probe3(probe[3]), // input wire [0:0]  probe3
+	.probe4(probe[4]), // input wire [0:0]  probe4
+	.probe5(probe[5]), // input wire [0:0]  probe5
+	.probe6(probe[6]), // input wire [0:0]  probe6
+	.probe7(probe[7]), // input wire [0:0]  probe7
+	.probe8(probe[8]), // input wire [0:0]  probe8
+	.probe9(probe[9]), // input wire [0:0]  probe9
+	.probe10(probe[10]), // input wire [0:0]  probe10
+	.probe11(probe[11]), // input wire [0:0]  probe11
+	.probe12(probe[12]), // input wire [0:0]  probe12
+	.probe13(probe[13]), // input wire [0:0]  probe13
+	.probe14(probe[14]), // input wire [0:0]  probe14
+	.probe15(probe[15]), // input wire [0:0]  probe15
+	.probe16(probe[16]), // input wire [0:0]  probe16
+	.probe17(probe[17]), // input wire [0:0]  probe17
+	.probe18(probe[18]), // input wire [0:0]  probe18
+	.probe19(probe[19]), // input wire [0:0]  probe19
+	.probe20(probe[20]), // input wire [0:0]  probe20
+	.probe21(probe[21]), // input wire [0:0]  probe21
+	.probe22(probe[22]), // input wire [0:0]  probe22
+	.probe23(probe[23]), // input wire [0:0]  probe23
+	.probe24(probe[24]), // input wire [0:0]  probe24
+	.probe25(probe[25]), // input wire [0:0]  probe25
+	.probe26(probe[26]), // input wire [0:0]  probe26
+	.probe27(probe[27]), // input wire [0:0]  probe27
+	.probe28(probe[28]), // input wire [0:0]  probe28
+	.probe29(probe[29]), // input wire [0:0]  probe29
+	.probe30(probe[30]), // input wire [0:0]  probe30
+	.probe31(probe[31]), // input wire [0:0]  probe31
+	.probe32(probe[32]), // input wire [0:0]  probe32
+	.probe33(probe[33]), // input wire [0:0]  probe33
+	.probe34(probe[34]), // input wire [0:0]  probe34
+	.probe35(probe[35]), // input wire [0:0]  probe35
+	.probe36(probe[36]), // input wire [0:0]  probe36
+	.probe37(probe[37]), // input wire [0:0]  probe37
+	.probe38(probe[38]), // input wire [0:0]  probe38
+	.probe39(probe[39]), // input wire [0:0]  probe39
+	.probe40(probe[40]), // input wire [0:0]  probe40
+	.probe41(probe[41]), // input wire [0:0]  probe41
+	.probe42(probe[42]), // input wire [0:0]  probe42
+	.probe43(probe[43]), // input wire [0:0]  probe43
+	.probe44(probe[44]), // input wire [0:0]  probe44
+	.probe45(probe[45]), // input wire [0:0]  probe45
+	.probe46(probe[46]), // input wire [0:0]  probe46
+	.probe47(probe[47]), // input wire [0:0]  probe47
+	.probe48(probe[48]), // input wire [0:0]  probe48
+	.probe49(probe[49]), // input wire [0:0]  probe49
+	.probe50(probe[50]), // input wire [0:0]  probe50
+	.probe51(probe[51]), // input wire [0:0]  probe51
+	.probe52(probe[52]), // input wire [0:0]  probe52
+	.probe53(probe[53]), // input wire [0:0]  probe53
+	.probe54(probe[54]), // input wire [0:0]  probe54
+        .probe55(probe[55]), // input wire [0:0]  probe55
+	.probe56(probe[56]), // input wire [0:0]  probe56
+	.probe57(probe[57]), // input wire [0:0]  probe57
+	.probe58(probe[58]), // input wire [0:0]  probe58
+	.probe59(probe[59]), // input wire [0:0]  probe59
+	.probe60(probe[60]), // input wire [0:0]  probe60
+	.probe61(probe[61]), // input wire [0:0]  probe61
+	.probe62(probe[62]), // input wire [0:0]  probe62
+	.probe63(probe[63]) // input wire [0:0]  probe63
+);
+*/
+endmodule
