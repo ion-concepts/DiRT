@@ -143,7 +143,7 @@ module axis_stream_to_pkt_backpressured_unit_test;
       //-------------------------------------------------------------------------------
       // AXIS Output Bus
       //-------------------------------------------------------------------------------
-      .axis_pkt_out(axis_response_gated.axis)
+      .axis_pkt(axis_response_gated.axis)
       );
 
    //-------------------------------------------------------------------------------
@@ -240,7 +240,7 @@ module axis_stream_to_pkt_backpressured_unit_test;
      // Configured as follows:
      // start_time = 1000
      // packet_size = 10 samples
-     // flow_id = {INPUT,OUTPUT}
+     // flow_id = {SRC0,DST0}
      // time_per_pkt = 10 (Sample_rate=clk_rate)
      // burst_size = 100 (10 packets)
      //
@@ -253,7 +253,7 @@ module axis_stream_to_pkt_backpressured_unit_test;
          enable <= 0;
          start_time <= 'd1000; 
          packet_size <= 'd10; 
-         flow_id <= {INPUT,OUTPUT}; 
+         flow_id <= {SRC0,DST0}; 
          time_per_pkt <= 10;
          burst_size <= 100;
          abort <= 0;
@@ -280,7 +280,7 @@ module axis_stream_to_pkt_backpressured_unit_test;
          // Let response threads run
          ready_to_test <= 1;
          //
-         $display("one_burst_one_clk_per_samp: Stimulus Done");
+         `INFO("one_burst_one_clk_per_samp: Stimulus Done");
          //
       end // block: load_stimulus
       //
@@ -299,8 +299,8 @@ module axis_stream_to_pkt_backpressured_unit_test;
          // Initialize header fields with default values
          golden_packet.init;
          // Overide FlowID
-         golden_packet.set_flow_src(INPUT);
-         golden_packet.set_flow_dst(OUTPUT);
+         golden_packet.set_flow_src(SRC0);
+         golden_packet.set_flow_dst(DST0);
          // Set packet length to be header plus 5 beats of 2 complex samples
          golden_packet.set_length(beats_to_bytes(2+5));
          // Set timestamp of first packet to be 1000...

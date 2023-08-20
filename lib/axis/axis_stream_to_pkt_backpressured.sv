@@ -62,9 +62,9 @@ module axis_stream_to_pkt_backpressured
     //
     // Streaming IQ Sample bus.
     // 16bit complex samples, AXIS protocol.
-    axis_t.slave axis_stream_in,
+    axis_t.slave axis_stream,
     // DiRT/DRat packetized stream out
-    axis_t.master axis_pkt_out
+    axis_t.master axis_pkt
     );
 
    import drat_protocol::*;
@@ -96,7 +96,7 @@ module axis_stream_to_pkt_backpressured
 
    logic               ingress_beat;
    always_comb begin
-      ingress_beat = axis_stream_in.tvalid && axis_stream_in.tready;
+      ingress_beat = axis_stream.tvalid && axis_stream.tready;
    end
 
    // Signal TREADY to upstream when both time_fifo and sample_fifo have space
@@ -104,7 +104,7 @@ module axis_stream_to_pkt_backpressured
    wire                     sfifo_not_full;
    wire                     tfifo_not_full;
    always_comb begin
-      axis_stream_in.tready = sfifo_not_full && tfifo_not_full && enable;
+      axis_stream.tready = sfifo_not_full && tfifo_not_full && enable;
    end
 
    //-----------------------------------------------------------------------------
@@ -327,7 +327,7 @@ module axis_stream_to_pkt_backpressured
       if (rst)
         sample_holding_reg <= 0;
       else if (ingress_beat) begin
-         sample_holding_reg <= axis_stream_in.tdata;
+         sample_holding_reg <= axis_stream.tdata;
       end
    end
 
@@ -349,8 +349,8 @@ module axis_stream_to_pkt_backpressured
       // Mux sample data depending on if we are finishing an odd length packet
       // or a regular beat with 2 paired samples.
       .in_tdata({end_of_packet,
-                 (end_of_packet && input_count[0]) ? axis_stream_in.tdata : sample_holding_reg,
-                 axis_stream_in.tdata}),
+                 (end_of_packet && input_count[0]) ? axis_stream.tdata : sample_holding_reg,
+                 axis_stream.tdata}),
       .in_tvalid( ((input_state==S_INPUT_PHASE2) || (end_of_packet && input_count[0])) && ingress_beat),
       .in_tready(sfifo_not_full),
 
@@ -551,7 +551,7 @@ module axis_stream_to_pkt_backpressured
       .clk(clk),
       .rst(rst),
       .in_axis(axis_pfifo),
-      .out_axis(axis_pkt_out),
+      .out_axis(axis_pkt),
       // Unused
       .space(space_packet),
       .occupied(occupied_packet)
@@ -566,7 +566,7 @@ module axis_stream_to_pkt_backpressured
      if (rst) begin
         idle <= 1'b1;
      end else begin
-        idle <= (~axis_pkt_out.tvalid) && (~enable) && (~axis_pfifo.tvalid) 
+        idle <= (~axis_pkt.tvalid) && (~enable) && (~axis_pfifo.tvalid) 
           && (~tfifo_tvalid) && (input_state == S_INPUT_IDLE) && (burst_state == S_NEW_BURST);
      end
 
