@@ -96,37 +96,37 @@ module drat2eth_framer
                 end
                 csr_idle <= ~csr_enable;               
              end
-             // 1st beat of header
+             // 1st beat of header (Ethernet)
              S_HEADER1: begin
                 if (out_axis.tready == 1)
 	          state <= S_HEADER2;
              end
-             //            
+             // 2nd beat of header( Ethernet)
              S_HEADER2: begin 
                if (out_axis.tready == 1)
 	          state <= S_HEADER3;
              end
-             //
+             // 3rd beat of header (Ethernet/IPv4)
              S_HEADER3: begin 
                if (out_axis.tready == 1)
 	          state <= S_HEADER4;
              end
-             //
+             // 4th beat of header (IPv4)
              S_HEADER4: begin 
                if (out_axis.tready == 1)
 	          state <= S_HEADER5;
              end
-             //
+             // 5th beat of header (IPv4)
              S_HEADER5: begin 
                 if (out_axis.tready == 1)
 	          state <= S_HEADER6;
             end
-             //
+             // 6th beat of header (UDP)
              S_HEADER6: begin 
                if (out_axis.tready == 1)
 	          state <= S_PAYLOAD;
              end
-             //
+             // subsequent beats of packet
              S_PAYLOAD: begin
                 if ((in_axis.tvalid == 1) && (out_axis.tready == 1) && (in_axis.tlast == 1))
 	            state <= S_IDLE;
@@ -174,12 +174,12 @@ module drat2eth_framer
    end // always_comb
    
 
-   // AXIS handshaking
+   // AXIS handshaking. These are all Async timing paths through the block
    always_comb begin
       in_axis.tready = (state == S_PAYLOAD) ? out_axis.tready : 1'b0;
-      out_axis.tvalid = (state == S_PAYLOAD) ? in_axis.tvalid :  (state == S_IDLE) ? 1'b0 : 1'b1; // Async timing path through block.
+      out_axis.tvalid = (state == S_PAYLOAD) ? in_axis.tvalid :  (state == S_IDLE) ? 1'b0 : 1'b1;
       out_axis.tlast = (state == S_PAYLOAD) ? in_axis.tlast : 1'b0;
-      out_axis.tdata[67:64] = ((state == S_PAYLOAD) & in_axis.tlast) ? {1'b0,drat_header.length[2:0]} : 4'b0000; // IJB. Think about this more
+      out_axis.tdata[67:64] = ((state == S_PAYLOAD) & in_axis.tlast) ? {1'b0,drat_header.length[2:0]} : 4'b0000;
    end
 
    // Abreviated IPv4 header checksum calc because many fields are constant or pre-programmed.
