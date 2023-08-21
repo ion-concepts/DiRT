@@ -62,6 +62,10 @@ module eth_classifier_2_egress_unit_test;
    logic [31:0] csr_ip;
    logic [15:0] csr_udp0;
    logic [15:0] csr_udp1;
+   logic        csr_udp0_enable;
+   logic        csr_udp1_enable;
+
+
    logic        csr_expose_drat;
    logic        csr_enable;
    // Declarations for Stimulus Thread(s)
@@ -117,6 +121,8 @@ module eth_classifier_2_egress_unit_test;
       .csr_ip(csr_ip),
       .csr_udp0(csr_udp0),
       .csr_udp1(csr_udp1),
+      .csr_udp0_enable(csr_udp0_enable),
+      .csr_udp1_enable(csr_udp1_enable),
       .csr_expose_drat(csr_expose_drat),
       .csr_enable(csr_enable)
       );
@@ -256,6 +262,9 @@ module eth_classifier_2_egress_unit_test;
       csr_ip <= 0;
       csr_udp0 <= 0;
       csr_udp1 <= 0;
+      csr_udp0_enable <= 0;
+      csr_udp1_enable <= 0;
+
       csr_expose_drat <= 1'b0;
       csr_enable <= 1'b0;
       // Open all valves by default
@@ -315,7 +324,10 @@ module eth_classifier_2_egress_unit_test;
          csr_ip <= {8'd5,8'd6,8'd7,8'd8};
          csr_udp0 <= 'd10;
          csr_udp1 <= 'd13;
-         csr_expose_drat <= 1'b0;
+         csr_udp0_enable <= 1'b1;
+         csr_udp1_enable <= 1'b1;
+
+         csr_expose_drat <= 1'b01;
          @(negedge clk);
          csr_enable <= 1'b1;
 
@@ -386,13 +398,19 @@ module eth_classifier_2_egress_unit_test;
          enable_response1 <= 1'b1;
          // While golden response FIFO not empty
          while (out1_axis_golden.axis.tvalid) begin
-            // Pop golden response.
-            out1_axis_golden.axis.read_beat(golden_beat1,golden_tlast1);
-            // Pop response.
-            out1_axis_post.axis.read_beat(response_beat1,response_tlast1);
-            // Compare response to golden
-            `FAIL_UNLESS_EQUAL(golden_beat1,response_beat1);
-            `FAIL_UNLESS_EQUAL(golden_tlast1,response_tlast1);
+            // Assume we are aligned with first beat of DRaT in response
+            // so throw away first 6 beats of Golden with lower protcol layers.
+            repeat(6) out1_axis_golden.axis.read_beat(golden_beat1,golden_tlast1);;
+            while ((golden_tlast1 === 1'b0) && out1_axis_golden.axis.tvalid) begin
+               // Loop here to process 1 DRaT packet
+               // Pop golden DRaT response.
+               out1_axis_golden.axis.read_beat(golden_beat1,golden_tlast1);
+               // Pop response.
+               out1_axis_post.axis.read_beat(response_beat1,response_tlast1);
+               // Compare response to golden
+               `FAIL_UNLESS_EQUAL(golden_beat1,response_beat1);
+               `FAIL_UNLESS_EQUAL(golden_tlast1,response_tlast1);
+            end
          end // while (out1_axis_golden.axis.tvalid)
          `INFO("test_udp_port_filtering: read_response_out1 finished");
          disable watchdog_thread;
