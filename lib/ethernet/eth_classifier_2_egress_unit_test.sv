@@ -42,11 +42,11 @@ module eth_classifier_2_egress_unit_test;
    // Bus between egress0 FIFO and response test bench
    eth_stream_t out0_axis_post(.clk(clk));
    // Bus between UUT egress1 and egress valve
-   eth_stream_t out1_axis(.clk(clk));
+   axis_t out1_axis(.clk(clk));
    // Bus between egress0 valve and FIFO
-   eth_stream_t out1_axis_pre(.clk(clk));
+   axis_t out1_axis_pre(.clk(clk));
    // Bus between egress0 FIFO and response test bench
-   eth_stream_t out1_axis_post(.clk(clk));
+   axis_t out1_axis_post(.clk(clk));
    // Golden response buses for FIFO's
    eth_stream_t in0_axis_golden(.clk(clk));
    eth_stream_t in1_axis_golden(.clk(clk));
@@ -77,7 +77,8 @@ module eth_classifier_2_egress_unit_test;
    // Declarations for Response Thread(s)
    logic [67:0] golden_beat0, response_beat0;
    logic        golden_tlast0, response_tlast0;
-   logic [67:0] golden_beat1, response_beat1;
+   logic [67:0] golden_beat1;
+   logic [63:0] response_beat1;
    logic        golden_tlast1, response_tlast1;
    // Watchdog
    integer      timeout;
@@ -113,7 +114,7 @@ module eth_classifier_2_egress_unit_test;
       // Two possible egress busses.
       //
       .out0_axis(out0_axis.axis), // Assumed to be default, with full TCP/IP stack downstream, 4 tuser bits included
-      .out1_axis(out1_axis.axis),  // Assumed to be DRaT protocol datapath, no tuser bits included.
+      .out1_axis(out1_axis),      // Assumed to be DRaT protocol datapath, no tuser bits included.
       //
       // CSR
       //
@@ -190,8 +191,8 @@ module eth_classifier_2_egress_unit_test;
      (
       .clk(clk),
       .rst(rst),
-      .in_axis(out1_axis.axis),
-      .out_axis(out1_axis_pre.axis),
+      .in_axis(out1_axis),
+      .out_axis(out1_axis_pre),
       .enable(enable_response1)
       );
 
@@ -203,8 +204,8 @@ module eth_classifier_2_egress_unit_test;
      (
       .clk(clk),
       .rst(rst),
-      .in_axis(out1_axis_pre.axis),
-      .out_axis(out1_axis_post.axis),
+      .in_axis(out1_axis_pre),
+      .out_axis(out1_axis_post),
       .space(),
       .occupied()
       );
@@ -399,16 +400,16 @@ module eth_classifier_2_egress_unit_test;
          // While golden response FIFO not empty
          while (out1_axis_golden.axis.tvalid) begin
             // Assume we are aligned with first beat of DRaT in response
-            // so throw away first 6 beats of Golden with lower protcol layers.
+            // so thro away first 6 beats of Golden with lower protcol layers.
             repeat(6) out1_axis_golden.axis.read_beat(golden_beat1,golden_tlast1);;
             while ((golden_tlast1 === 1'b0) && out1_axis_golden.axis.tvalid) begin
                // Loop here to process 1 DRaT packet
                // Pop golden DRaT response.
                out1_axis_golden.axis.read_beat(golden_beat1,golden_tlast1);
                // Pop response.
-               out1_axis_post.axis.read_beat(response_beat1,response_tlast1);
+               out1_axis_post.read_beat(response_beat1,response_tlast1);
                // Compare response to golden
-               `FAIL_UNLESS_EQUAL(golden_beat1,response_beat1);
+               `FAIL_UNLESS_EQUAL(golden_beat1[63:0],response_beat1);
                `FAIL_UNLESS_EQUAL(golden_tlast1,response_tlast1);
             end
          end // while (out1_axis_golden.axis.tvalid)
@@ -433,7 +434,7 @@ module eth_classifier_2_egress_unit_test;
     task idle_all();
        in_axis_pre.axis.idle_master();
        out0_axis_post.axis.idle_slave();
-       out1_axis_post.axis.idle_slave();
+       out1_axis_post.idle_slave();
        in0_axis_golden.axis.idle_master();
        in1_axis_golden.axis.idle_master();
        out0_axis_golden.axis.idle_slave();

@@ -44,7 +44,8 @@ module eth_classifier_2_egress
    input logic        csr_enable //TODO
    );
 
-   axis_t #(.WIDTH(68)) out0_pre_axis(.clk(clk)), out1_pre_axis(.clk(clk));
+   axis_t #(.WIDTH(68)) out0_pre_axis(.clk(clk));
+   axis_t #(.WIDTH(64)) out1_pre_axis(.clk(clk));
 
    logic       is_eth_dst_addr;
    logic       is_eth_broadcast;
@@ -348,8 +349,8 @@ module eth_classifier_2_egress
                               ((state == FORWARD_0_AND_1) && out0_pre_axis.tready));
 
       {out0_pre_axis.tlast, out0_pre_axis.tdata} = {out_axis.tlast, out_axis.tdata};
-
-      {out1_pre_axis.tlast, out1_pre_axis.tdata} = {out_axis.tlast, out_axis.tdata};
+      // Strip ethernet TUSER bits
+      {out1_pre_axis.tlast, out1_pre_axis.tdata} = {out_axis.tlast, out_axis.tdata[63:0]};
 
    end // always_comb
 
