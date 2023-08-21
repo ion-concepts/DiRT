@@ -32,13 +32,13 @@ module dsp_loopback
 
 
    always_comb begin
-      //axis_stream_out.tdata = axis_stream_in.tdata;
-      axis_stream_out.tdata = {sample,sample};
+      axis_stream_out.tdata = axis_stream_in.tdata;
+      //axis_stream_out.tdata = {sample,sample};
       axis_stream_out.tvalid = strobe;
       axis_stream_in.tready = strobe;
    end
 
-/*
+
    // Evey time count wraps strobe is asserted for 1 cycle.
    always_ff @(posedge clk)
      if (rst) begin
@@ -51,9 +51,9 @@ module dsp_loopback
           strobe <= 0;
         count <= count + 1;
      end
- */
+ 
    // Every time count wraps strobe is asserted for 1 cycle.
-
+/*
    always_ff @(posedge clk)
      if (rst) begin
         strobe <= 0;
@@ -68,5 +68,5 @@ module dsp_loopback
         end
         count <= count + 1;
      end
-
+*/
 endmodule
