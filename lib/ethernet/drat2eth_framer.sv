@@ -192,7 +192,7 @@ module drat2eth_framer
         checksum_pre[16:0] <= (checksum_ipaddr_plus_len[15:0] + checksum_ipaddr_plus_len[18:16]);
       // Possibility of one more carry bit that needs to fold in
       if (state == S_HEADER3)
-        ipv4_checksum[15:0] <= ~(checksum_pre[15:0] + checksum_pre[0]);
+        ipv4_checksum[15:0] <= ~(checksum_pre[15:0] + checksum_pre[16]);
    end
 
    // Enough remaining dynamic range in checksum_ipaddr to add in another 16 bits without generating a carry into [19]
