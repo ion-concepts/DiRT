@@ -264,15 +264,15 @@ module dsp_1_channel
    //-------------------------------------------------------------------------------
    //assign probe = 64'h0;
 /*
-   assign probe[0] =  axis_tx_sample.tvalid;
-   assign probe[1] = axis_tx_sample.tready;
-   assign probe[2] =  axis_tx_sample.tlast;
-   assign probe[10:3] = axis_tx_sample.tdata[7:0];
+   assign probe[0] =  axis_rx_sample.tvalid;
+   assign probe[1] = axis_rx_sample.tready;
+   assign probe[2] =  axis_rx_sample.tlast;
+   assign probe[10:3] = axis_rx_sample.tdata[7:0];
 
-   assign probe[11] = axis_tx_packet_fifo.tvalid;
-   assign probe[12] = axis_tx_packet_fifo.tready;
-   assign probe[13] = axis_tx_packet_fifo.tlast;
-   assign probe[21:14] = axis_tx_packet_fifo.tdata[7:0];
+   assign probe[11] = axis_rx_packet.tvalid;
+   assign probe[12] = axis_rx_packet.tready;
+   assign probe[13] = axis_rx_packet.tlast;
+   assign probe[21:14] = axis_rx_packet.tdata[7:0];
 
    assign probe[22] = axis_rx_data.tvalid;
    assign probe[23] = axis_rx_data.tready;

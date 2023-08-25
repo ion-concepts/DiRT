@@ -29,59 +29,65 @@ module axis_packet_fifo
     )
 
 
-   (
-    input logic 		 clk,
-    input logic 		 rst,
-    input logic 		 sw_rst,
-    //
-    // Input Bus
-    //
-    input logic [WIDTH-1:0] 	 in_tdata,
-    input logic 		 in_tvalid,
-    output logic 		 in_tready,
-    input logic 		 in_tlast,
-    //
-    // Output Bus
-    //
-    output logic [WIDTH-1:0] 	 out_tdata,
-    output logic 		 out_tvalid,
-    input logic 		 out_tready,
-    output logic 		 out_tlast,
-    // Occupancy
-    output logic [SIZE:0] 	 space,
-    output logic [SIZE:0] 	 occupied,
-    output reg [MAX_PACKETS-1:0] packet_count
-   
-    );
+     (
+      input logic                  clk,
+      input logic                  rst,
+      input logic                  sw_rst,
+      //
+      // Input Bus
+      //
+      input logic [WIDTH-1:0]      in_tdata,
+      input logic                  in_tvalid,
+      output logic                 in_tready,
+      input logic                  in_tlast,
+      //
+      // Output Bus
+      //
+      output logic [WIDTH-1:0]     out_tdata,
+      output logic                 out_tvalid,
+      input logic                  out_tready,
+      output logic                 out_tlast,
+      // Occupancy
+      output logic [SIZE:0]        space,
+      output logic [SIZE:0]        occupied,
+      output reg [MAX_PACKETS-1:0] packet_count
+     
+      );
 
    
-   logic 			 packet_in, packet_out;
-   logic 			 in_tmp_tvalid;
-   logic 			 in_tmp_tready;
-   logic 			 out_tmp_tvalid;
-   logic 			 out_tmp_tready;
+   logic                           packet_in, packet_out;
+   logic                           in_tmp_tvalid;
+   logic                           in_tmp_tready;
+   logic                           out_tmp_tvalid;
+   logic                           out_tmp_tready;
    
 
-    always_ff @(posedge clk)
-      if (rst) 
-        packet_count <= 0;
-      else if (sw_rst)
+   always_ff @(posedge clk)
+     if (rst) 
+       packet_count <= 0;
+     else if (sw_rst)
         packet_count <= 0;
       // packet in and packet out in same cycle equals no net change in packet count.
       else if (packet_in && ~packet_out)
         packet_count <= packet_count + 1;
       else if (packet_out && ~packet_in)
         packet_count <= packet_count - 1;
-        
+   
+   always_comb begin
+      // Stops packet count wrapping by back pressuring.
+      // TODO: We could change this to drop rather than back pressure.
+      in_tmp_tvalid = !(&packet_count) ? in_tvalid : 1'b0;
+      in_tready = !(&packet_count) ? in_tmp_tready : 1'b0;
 
-   assign packet_out = out_tmp_tvalid && out_tmp_tready && out_tlast;
-   assign packet_in = in_tmp_tvalid && in_tmp_tready && in_tlast;
+      // If there are any whole packets buffered then advertize
+      // available data on egress.
+      out_tvalid = |packet_count ? out_tmp_tvalid : 1'b0;
+      out_tmp_tready = |packet_count ? out_tready : 1'b0;
 
-   assign in_tmp_tvalid = !(&packet_count) ? in_tvalid : 1'b0;
-   assign in_tready = !(&packet_count) ? in_tmp_tready : 1'b0;
-
-   assign out_tvalid = |packet_count ? out_tmp_tvalid : 1'b0;
-   assign out_tmp_tready = |packet_count ? out_tready : 1'b0;
+      // Whole packets are counted when TLAST passes this point.
+      packet_out = out_tmp_tvalid && out_tmp_tready && out_tlast;
+      packet_in = in_tmp_tvalid && in_tmp_tready && in_tlast;
+   end
    
    axis_fifo
      #(

@@ -15,6 +15,7 @@
 
 `include "svunit_defines.svh"
 `include "axis_packet_fifo.sv"
+`include "axis_fifo.sv"
 
 module axis_packet_fifo_unit_test;
   timeunit 1ns; 
@@ -30,20 +31,21 @@ module axis_packet_fifo_unit_test;
    logic clk;
    logic rst;
 
-   axis_slave_t   in0(.clk(clk));
-   axis_master_t  out0(.clk(clk));
+   axis_t #(.WIDTH(64))  in0(.clk(clk));
+   axis_t #(.WIDTH(64))  out0(.clk(clk));
+ 
 
    logic [63:0]   test_tdata;
-   logic 	        test_tlast;
-   wire [SIZE:0]  space, occupied;
-   wire [PACKETS-1:0] packet_count;
-   int 		      timeout;
+   logic          test_tlast;
+   logic [SIZE:0]  space, occupied;
+   logic [PACKETS-1:0] packet_count;
+   int                timeout;
 
    //
    // Generate clk
    //
    initial begin
-      clk <= 1'b1;
+      clk <= 1'b0;
    end
 
    always
@@ -53,34 +55,27 @@ module axis_packet_fifo_unit_test;
   // This is the UUT that we're
   // running the Unit Tests on
   //===================================
-  axis_packet_fifo
-    #(.WIDTH(64),
+
+  
+  axis_packet_fifo_wrapper
+    #(
       .SIZE(SIZE),
       .MAX_PACKETS(PACKETS)
       )
    my_axis_packet_fifo
      (
-      //-- Clock/Reset
       .clk(clk),
       .rst(rst),
       .sw_rst(1'b0),
-      // -- Input AXI Stream
-      .in_tdata(in0.tdata),
-      .in_tvalid(in0.tvalid),
-      .in_tready(in0.tready),
-      .in_tlast(in0.tlast),
-      //-- Output AXI Stream
-      .out_tdata(out0.tdata),
-      .out_tvalid(out0.tvalid),
-      .out_tready(out0.tready),
-      .out_tlast(out0.tlast),
+      .in_axis(in0),
+      .out_axis(out0),
       // Occupancy
       .space(space),
       .occupied(occupied),
       .packet_count(packet_count)
       );
 
-
+ 
   //===================================
   // Build
   //===================================
@@ -98,9 +93,10 @@ module axis_packet_fifo_unit_test;
      // Reset UUT
      @(posedge clk);
      rst <= 1'b1;
+     idle_all();
      repeat(10) @(posedge clk);
      rst <= 1'b0;
-     idle_all();
+
   endtask
 
 
@@ -156,7 +152,6 @@ module axis_packet_fifo_unit_test;
 	in0.write_beat(64'h1111_1111_1111_1111,1'b0);
 	in0.write_beat(64'hffff_ffff_ffff_ffff,1'b1);
      end
-
      begin : slave_thread
 	// PKT1
 	out0.read_beat(test_tdata,test_tlast);
@@ -201,8 +196,8 @@ join
 `SVUNIT_TESTS_END
 
 task idle_all();
- in0.idle_master();
- out0.idle_slave();
-  endtask // idle_all
+   in0.idle_master();
+   out0.idle_slave();
+endtask // idle_all
 
 endmodule

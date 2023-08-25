@@ -194,7 +194,7 @@ module axis_pkt_to_stream
    // Debug Only below
    //-------------------------------------------------------------------------------
    //assign probe = 64'h0;
-
+/*
    assign probe[0] =  axis_pkt.tvalid;
    assign probe[1] = axis_pkt.tready;
    assign probe[2] =  axis_pkt.tlast;
@@ -286,5 +286,5 @@ module axis_pkt_to_stream
 	.probe62(probe[62]), // input wire [0:0]  probe62
 	.probe63(probe[63]) // input wire [0:0]  probe63
 );
-
+*/
 endmodule // axis_pkt_to_stream
