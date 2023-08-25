@@ -49,32 +49,36 @@ module axis_pkt_to_stream
      input logic        clk,
      input logic        rst,
      // System time in
-     input logic [63:0] current_time_in,
+     input logic [63:0] current_time,
      // Enable signals
-     input logic        deframer_enable_in,
-     input logic        status_enable_in,
-     input logic        consumption_enable_in,
-     input logic        tx_control_enable_in,
+     input logic        deframer_enable,
+     input logic        status_enable,
+     input logic        consumption_enable,
+     input logic        tx_control_enable,
      // FlowID to me used in status packet header
-     input logic [31:0] status_flow_id_in,
+     input logic [31:0] status_flow_id,
      // FlowID to me used in consumption packet header
-     input logic [31:0] consumption_flow_id_in,
+     input logic [31:0] consumption_flow_id,
      // Error policy register
-     input logic        error_policy_next_packet_in,
+     input logic        error_policy_next_packet,
      // Flag Output beats that are active sample data vs zero padding
      output logic       run_out,
      // Dirt/DRat packetized stream in
-     axis_t.slave axis_pkt_in,
+     axis_t.slave axis_pkt,
      // Status pkt stream out
-     axis_t.master axis_status_out,
+     axis_t.master axis_status,
      // Consumption pkt stream out
-     axis_t.master axis_consumption_out,
+     axis_t.master axis_consumption,
      // Stream oriented raw IQ samples out
-     axis_t.master axis_stream_out
+     axis_t.master axis_stream
      );
 
-    import dirt_protocol::*;
+    import drat_protocol::*;
     import axis_pkt_to_stream_pkg::*;
+
+
+    wire [63:0]          probe ; // Debug
+
 
     // Width of FIFO passing unframed IQ samples plus metadata
     localparam C_FIFO_WIDTH = $bits(pkt_to_stream_fifo_t);
@@ -102,8 +106,8 @@ module axis_pkt_to_stream
     axis_deframer axis_deframer_i (
                                    .clk(clk),
                                    .rst(rst),
-                                   .enable_in(deframer_enable_in),
-                                   .axis_pkt_in(axis_pkt_in),
+                                   .enable_in(deframer_enable),
+                                   .axis_pkt_in(axis_pkt),
                                    .axis_tail_out(axis_tail)
                                    );
 
@@ -117,7 +121,9 @@ module axis_pkt_to_stream
                          .clk(clk),
                          .rst(rst),
                          .in_axis(axis_tail),
-                         .out_axis(axis_head)
+                         .out_axis(axis_head),
+                         .space(),
+                         .occupied()
                          );
 
 
@@ -129,8 +135,8 @@ module axis_pkt_to_stream
     axis_tx_control axis_tx_control_i (
                                        .clk(clk),
                                        .rst(rst),
-                                       .enable_in(tx_control_enable_in),
-                                       .error_policy_next_packet_in(error_policy_next_packet_in),
+                                       .enable_in(tx_control_enable),
+                                       .error_policy_next_packet_in(error_policy_next_packet),
                                        .axis_head_in(axis_head),
                                        .now_in(now),
                                        .late_in(late),
@@ -139,7 +145,7 @@ module axis_pkt_to_stream
                                        .generate_consumption_out(generate_consumption),
                                        .consumed_seq_num_out(consumed_seq_num),
                                        .run_out(run_out),
-                                       .axis_stream_out(axis_stream_out)
+                                       .axis_stream_out(axis_stream)
                                        );
 
     //
@@ -148,12 +154,12 @@ module axis_pkt_to_stream
     axis_status_report axis_status_report_i (
                                              .clk(clk),
                                              .rst(rst),
-                                             .enable_in(status_enable_in),
-                                             .flow_id_in(status_flow_id_in),
+                                             .enable_in(status_enable),
+                                             .flow_id_in(status_flow_id),
                                              .generate_pkt_in(generate_pkt),
                                              .status_payload_in(status_payload),
-                                             .current_time_in(current_time_in),
-                                             .axis_status_out(axis_status_out)
+                                             .current_time_in(current_time),
+                                             .axis_status_out(axis_status)
                                              );
 
     //
@@ -162,12 +168,12 @@ module axis_pkt_to_stream
     axis_status_report axis_consumption_report_i (
                                                   .clk(clk),
                                                   .rst(rst),
-                                                  .enable_in(consumption_enable_in),
-                                                  .flow_id_in(consumption_flow_id_in),
+                                                  .enable_in(consumption_enable),
+                                                  .flow_id_in(consumption_flow_id),
                                                   .generate_pkt_in(generate_consumption),
                                                   .status_payload_in({ACK,24'h0,consumed_seq_num}),
-                                                  .current_time_in(current_time_in),
-                                                  .axis_status_out(axis_consumption_out)
+                                                  .current_time_in(current_time),
+                                                  .axis_status_out(axis_consumption)
                                                   );
 
 
@@ -177,11 +183,108 @@ module axis_pkt_to_stream
     time_check time_check_i (
                              .clk(clk),
                              .rst(rst),
-                             .current_time_in(current_time_in),
-                             .event_time_in(axis_head.tdata[127:64]),
-                             .now_out(now),
-                             .late_out(late)
+                             .current_time(current_time),
+                             .event_time(axis_head.tdata[127:64]),
+                             .early(),
+                             .now(now),
+                             .late(late)
                              );
 
+   //-------------------------------------------------------------------------------
+   // Debug Only below
+   //-------------------------------------------------------------------------------
+   //assign probe = 64'h0;
+/*
+   assign probe[0] =  axis_pkt.tvalid;
+   assign probe[1] = axis_pkt.tready;
+   assign probe[2] =  axis_pkt.tlast;
+   assign probe[10:3] = axis_pkt.tdata[7:0];
 
+   assign probe[11] = axis_status.tvalid;
+   assign probe[12] = axis_status.tready;
+   assign probe[13] = axis_status.tlast;
+   assign probe[21:14] = axis_status.tdata[39:32];
+
+   assign probe[22] = axis_consumption.tvalid;
+   assign probe[23] = axis_consumption.tready;
+   assign probe[24] = axis_consumption.tlast;
+   assign probe[32:25] = axis_consumption.tdata[39:32];
+
+   assign probe[33] = axis_stream.tvalid;
+   assign probe[34] = axis_stream.tready;
+   assign probe[50:35] = axis_stream.tdata[15:0];
+
+   assign probe[51] = run_out;
+
+   assign probe[63:52] = 0;
+
+   ila_64 ila_64_i0 (
+	.clk(clk), // input wire clk
+
+	.probe0(probe[0]), // input wire [0:0]  probe0
+	.probe1(probe[1]), // input wire [0:0]  probe1
+	.probe2(probe[2]), // input wire [0:0]  probe2
+	.probe3(probe[3]), // input wire [0:0]  probe3
+	.probe4(probe[4]), // input wire [0:0]  probe4
+	.probe5(probe[5]), // input wire [0:0]  probe5
+	.probe6(probe[6]), // input wire [0:0]  probe6
+	.probe7(probe[7]), // input wire [0:0]  probe7
+	.probe8(probe[8]), // input wire [0:0]  probe8
+	.probe9(probe[9]), // input wire [0:0]  probe9
+	.probe10(probe[10]), // input wire [0:0]  probe10
+	.probe11(probe[11]), // input wire [0:0]  probe11
+	.probe12(probe[12]), // input wire [0:0]  probe12
+	.probe13(probe[13]), // input wire [0:0]  probe13
+	.probe14(probe[14]), // input wire [0:0]  probe14
+	.probe15(probe[15]), // input wire [0:0]  probe15
+	.probe16(probe[16]), // input wire [0:0]  probe16
+	.probe17(probe[17]), // input wire [0:0]  probe17
+	.probe18(probe[18]), // input wire [0:0]  probe18
+	.probe19(probe[19]), // input wire [0:0]  probe19
+	.probe20(probe[20]), // input wire [0:0]  probe20
+	.probe21(probe[21]), // input wire [0:0]  probe21
+	.probe22(probe[22]), // input wire [0:0]  probe22
+	.probe23(probe[23]), // input wire [0:0]  probe23
+	.probe24(probe[24]), // input wire [0:0]  probe24
+	.probe25(probe[25]), // input wire [0:0]  probe25
+	.probe26(probe[26]), // input wire [0:0]  probe26
+	.probe27(probe[27]), // input wire [0:0]  probe27
+	.probe28(probe[28]), // input wire [0:0]  probe28
+	.probe29(probe[29]), // input wire [0:0]  probe29
+	.probe30(probe[30]), // input wire [0:0]  probe30
+	.probe31(probe[31]), // input wire [0:0]  probe31
+	.probe32(probe[32]), // input wire [0:0]  probe32
+	.probe33(probe[33]), // input wire [0:0]  probe33
+	.probe34(probe[34]), // input wire [0:0]  probe34
+	.probe35(probe[35]), // input wire [0:0]  probe35
+	.probe36(probe[36]), // input wire [0:0]  probe36
+	.probe37(probe[37]), // input wire [0:0]  probe37
+	.probe38(probe[38]), // input wire [0:0]  probe38
+	.probe39(probe[39]), // input wire [0:0]  probe39
+	.probe40(probe[40]), // input wire [0:0]  probe40
+	.probe41(probe[41]), // input wire [0:0]  probe41
+	.probe42(probe[42]), // input wire [0:0]  probe42
+	.probe43(probe[43]), // input wire [0:0]  probe43
+	.probe44(probe[44]), // input wire [0:0]  probe44
+	.probe45(probe[45]), // input wire [0:0]  probe45
+	.probe46(probe[46]), // input wire [0:0]  probe46
+	.probe47(probe[47]), // input wire [0:0]  probe47
+	.probe48(probe[48]), // input wire [0:0]  probe48
+	.probe49(probe[49]), // input wire [0:0]  probe49
+	.probe50(probe[50]), // input wire [0:0]  probe50
+	.probe51(probe[51]), // input wire [0:0]  probe51
+	.probe52(probe[52]), // input wire [0:0]  probe52
+	.probe53(probe[53]), // input wire [0:0]  probe53
+	.probe54(probe[54]), // input wire [0:0]  probe54
+        .probe55(probe[55]), // input wire [0:0]  probe55
+	.probe56(probe[56]), // input wire [0:0]  probe56
+	.probe57(probe[57]), // input wire [0:0]  probe57
+	.probe58(probe[58]), // input wire [0:0]  probe58
+	.probe59(probe[59]), // input wire [0:0]  probe59
+	.probe60(probe[60]), // input wire [0:0]  probe60
+	.probe61(probe[61]), // input wire [0:0]  probe61
+	.probe62(probe[62]), // input wire [0:0]  probe62
+	.probe63(probe[63]) // input wire [0:0]  probe63
+);
+*/
 endmodule // axis_pkt_to_stream

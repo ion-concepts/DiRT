@@ -46,8 +46,8 @@ module axis_tx_control
      input logic         enable_in,
      // CSR (Control/Status Register) interface
      input logic         error_policy_next_packet_in,
-                         // Interface to unframed sample FIFO
-                         axis_t.slave axis_head_in,
+     // Interface to unframed sample FIFO
+     axis_t.slave axis_head_in,
      // Time Flags
      input logic         now_in,
      input logic         late_in,
@@ -62,7 +62,7 @@ module axis_tx_control
      axis_t.master axis_stream_out
      );
 
-    import dirt_protocol::*;
+    import drat_protocol::*;
     import axis_pkt_to_stream_pkg::*;
 
     

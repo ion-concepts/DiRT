@@ -12,7 +12,7 @@
 `timescale 1ns/1ps
 
 `include "svunit_defines.svh"
-//`include "drat_protocol.sv"
+`include "drat_protocol.sv"
 
 module axis_mm_to_pkt_unit_test;
    timeunit 1ns;

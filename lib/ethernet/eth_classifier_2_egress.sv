@@ -38,11 +38,14 @@ module eth_classifier_2_egress
    input logic [31:0] csr_ip,
    input logic [15:0] csr_udp0,
    input logic [15:0] csr_udp1,
+   input logic        csr_udp0_enable,
+   input logic        csr_udp1_enable,
    input logic        csr_expose_drat,
    input logic        csr_enable //TODO
    );
 
-   axis_t #(.WIDTH(68)) out0_pre_axis(.clk(clk)), out1_pre_axis(.clk(clk));
+   axis_t #(.WIDTH(68)) out0_pre_axis(.clk(clk));
+   axis_t #(.WIDTH(64)) out1_pre_axis(.clk(clk));
 
    logic       is_eth_dst_addr;
    logic       is_eth_broadcast;
@@ -53,7 +56,7 @@ module eth_classifier_2_egress
    logic       is_ipv4_proto_icmp;
    logic [1:0] is_udp_dst_ports;
    logic       is_icmp_no_fwd;
-   logic       is_chdr;
+
 
    // Small async RAM bult from CLB's stores packet header during parsing.
    localparam  HEADER_RAM_SIZE = 9;
@@ -136,14 +139,15 @@ module eth_classifier_2_egress
                  // MAC has broadcast addr or multicast bit set. Only send to Egress0
                  header_ram_addr <= 0;
                  state <= FORWARD_0;
-              end else if (/*!is_eth_dst_addr*/0) begin
+//              end else if (/*!is_eth_dst_addr*/0) begin
                  // MAC dst is not our address. Discard packet.
-                 header_ram_addr <= HEADER_RAM_SIZE - 1;
-                 state <= DROP_PACKET;
-              end else if (is_ipv4_proto_udp && (is_udp_dst_ports != 0)) begin
+//                 header_ram_addr <= HEADER_RAM_SIZE - 1;
+//                 state <= DROP_PACKET;
+              end else if (is_eth_dst_addr && (is_udp_dst_ports[1] || is_udp_dst_ports[0])) begin
                  // Has our MAC dst addr and has UDP port match.
-                 // Jump to DRaT header if enabled to strip lower protocols.
-                 header_ram_addr <= csr_expose_drat ? 6 : 0;
+                 // Jump to DRaT header if enabled to strip lower protocols
+                 // else strip headers back to ipv4 (with last16b of ethernet in MSBs)
+                 header_ram_addr <= csr_expose_drat ? 6 : 2;
                  state <= FORWARD_1;
               end else begin
                  // Has our MAC dst addr but no UDP port match.
@@ -286,9 +290,9 @@ module eth_classifier_2_egress
            end
            6: begin
               // Look at UDP dest port. Is it a match for one of mine?
-              if ((in_tdata_reg[47:32] == csr_udp0[15:0]) && is_ipv4_proto_udp)
+              if ((in_tdata_reg[47:32] == csr_udp0[15:0]) && is_ipv4_proto_udp && csr_udp0_enable)
                 is_udp_dst_ports[0] <= 1'b1;
-              if ((in_tdata_reg[47:32] == csr_udp1[15:0]) && is_ipv4_proto_udp)
+              if ((in_tdata_reg[47:32] == csr_udp1[15:0]) && is_ipv4_proto_udp && csr_udp1_enable)
                 is_udp_dst_ports[1] <= 1'b1;
            end
            7: begin
@@ -345,8 +349,8 @@ module eth_classifier_2_egress
                               ((state == FORWARD_0_AND_1) && out0_pre_axis.tready));
 
       {out0_pre_axis.tlast, out0_pre_axis.tdata} = {out_axis.tlast, out_axis.tdata};
-
-      {out1_pre_axis.tlast, out1_pre_axis.tdata} = {out_axis.tlast, out_axis.tdata};
+      // Strip ethernet TUSER bits
+      {out1_pre_axis.tlast, out1_pre_axis.tdata} = {out_axis.tlast, out_axis.tdata[63:0]};
 
    end // always_comb
 

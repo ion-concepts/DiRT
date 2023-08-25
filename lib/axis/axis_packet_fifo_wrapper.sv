@@ -1,7 +1,29 @@
+//-------------------------------------------------------------------------------
+// File:    axis_packet_fifo_wrapper.sv
+//
+// Author:  Ian Buckley, Ion Concepts LLC
+//
+// Description:
+//
+// Wraps regular stream FIFO's (1 clock only) to make them packet aware.
+// Only allows a packet to egress once its fully ingressed. This is very useful
+// when packet beats arrive at a slow rate relative to the (current) clock.
+// System Verilog interfaces.
+//
+//  Parameterizable:
+//  * Size (Depth) of FIFO
+//  * FPGA vendor
+//  * Technology Library Vendor (Xilinx/Altera/etc)
+//
+// License: CERN-OHL-P (See LICENSE.md)
+//
+//-------------------------------------------------------------------------------
+`include "global_defs.svh"
+
 module axis_packet_fifo_wrapper #(
         parameter SIZE=9,        // Size of FIFO (LOG2)
         parameter MAX_PACKETS=8, // Sets number of packets that can be in FIFO concurrently (LOG2)
-        parameter VENDOR="XILINX"
+        parameter VENDOR="xilinx" // "xilinx" is currently only support vendor.
     ) (
         input logic clk,
         input logic rst,
@@ -15,9 +37,9 @@ module axis_packet_fifo_wrapper #(
         //
         axis_t.master out_axis,
         // Occupancy
-        output logic [SIZE:0]          space_out,
-        output logic [SIZE:0]          occupied_out,
-        output logic [MAX_PACKETS-1:0] packet_count_out
+        output logic [SIZE:0]          space,
+        output logic [SIZE:0]          occupied,
+        output logic [MAX_PACKETS-1:0] packet_count
     );
 
     logic [in_axis.WIDTH-1:0]  in_tdata;
@@ -57,8 +79,8 @@ module axis_packet_fifo_wrapper #(
         .out_tvalid(out_tvalid),
         .out_tready(out_tready),
         .out_tlast(out_tlast),
-        .space(space_out),
-        .occupied(occupied_out),
-        .packet_count(packet_count_out)
+        .space(space),
+        .occupied(occupied),
+        .packet_count(packet_count)
     );
 endmodule

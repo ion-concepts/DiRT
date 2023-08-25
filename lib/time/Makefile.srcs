@@ -1,0 +1,15 @@
+#-----------------------------------------------------------------------------
+# File:    Makefile.srcs
+#
+# Author:  Ian Buckley, Ion Concepts LLC
+#
+# Description: Synthesizable System Verilog Source Code For Makefile Driven Flows
+#
+# License: CERN-OHL-P (See LICENSE.md)
+#
+#-----------------------------------------------------------------------------
+
+DIRT_TIME_SRCS = $(abspath $(addprefix $(DIRT_DIR)/lib/time/, \
+time_check.sv \
+time_source.sv \
+))
