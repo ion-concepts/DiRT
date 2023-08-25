@@ -57,14 +57,16 @@ module axis_time_report
    
 
    // Count down interval between TIME_REPORTs
+   // Counter is initialized to 1 so that we can use simple equality test
+   // to check for reset condition.
    always_ff @(posedge clk)
      if(rst) begin
-        counter <= 12'd0;
+        counter <= 16'd1;
         generate_pkt <= 1'b0;
      end else if (current_time[7:0] == 8'h00) begin
         if (counter == csr_period) begin
            generate_pkt <= 1'b1;
-           counter <= 0;
+           counter <= 16'b1;
         end else begin
            counter <= counter + 1;
         end
