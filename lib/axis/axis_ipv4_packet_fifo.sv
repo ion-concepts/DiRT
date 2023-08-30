@@ -37,9 +37,9 @@ module axis_ipv4_packet_fifo
     //
     // CSR interface
     //
-    input csr_reset_stats,
-    output [31:0] csr_buffered_packets,
-    output [31:0] csr_dropped_packets,
+    input logic csr_reset_stats,
+    output logic [31:0] csr_buffered_packets,
+    output logic [31:0] csr_dropped_packets,
     //
     // Input Bus
     //
@@ -66,7 +66,7 @@ module axis_ipv4_packet_fifo
    // State machine declarations
    //---------------------------------------------------------
    enum                    {
-                            WAIT,
+                            IDLE,
                             BUFFER,
                             DROP
                             } state;
@@ -80,7 +80,7 @@ module axis_ipv4_packet_fifo
    //-------------------------------------------------------------------------------
      always_ff @(posedge clk)
        if(rst) begin
-          state <= WAIT;
+          state <= IDLE;
           enable_ready <= 1'b0;
        end else begin
           case(state)
@@ -123,14 +123,13 @@ module axis_ipv4_packet_fifo
    //
    // 4 way combinatorial mux of the different valid/ready pairs from outputs.
    //
-
-   assign out_fifo_axis.tvalid = (state == BUFFER) && enable_ready && in_fifo_axis.tvalid;
- 
-
-   assign in_fifo_axis.tready =
+   always_comb begin
+      out_fifo_axis.tvalid = (state == BUFFER) && enable_ready && in_fifo_axis.tvalid;
+      in_fifo_axis.tready =
                           ((state == BUFFER) && enable_ready && out_fifo_axis.tready) | // Buffer this packet
                           ((state == DROP) && enable_ready); // Discard this packet
-
+   end
+  
    //-------------------------------------------------------------------------------
    // AXI minimal FIFO breaks all combinatorial through paths
    //-------------------------------------------------------------------------------
@@ -139,10 +138,9 @@ module axis_ipv4_packet_fifo
       .clk(clk),
       .rst(rst),
       .in_axis(in_axis),
-      .out_tdata(in_fifo_axis),
-      // Status (unused)
-      .space(),
-      .occupied()
+      .out_axis(in_fifo_axis),
+      .space_out(),
+      .occupied_out()
       );
 
    //-------------------------------------------------------------------------------
@@ -157,11 +155,12 @@ module axis_ipv4_packet_fifo
      (
       .clk(clk),
       .rst(rst),
+      .sw_rst(1'b0),
       .in_axis(out_fifo_axis),
       .out_axis(out_axis),
-      .space_out(space),
-      .occupied_out(occupied),
-      .packet_count_out(packet_count)
+      .space(space),
+      .occupied(occupied),
+      .packet_count(packet_count)
       );
 
    

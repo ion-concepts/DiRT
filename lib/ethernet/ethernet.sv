@@ -535,7 +535,39 @@ class UDPPacket extends IPv4Packet;
       axis_bus.push_beat(beat,1);
     endtask // send_udp_to_eth_stream
 
+   // Push entire UDP packet, without Ethernet headers, onto 64bit axis_t bus.
+   task send_udp_to_ipv4_stream(virtual interface axis_t axis_bus, bit use_assertion=1);
+      integer payload_len;
+      logic [63:0] beat;
 
+      axis_bus.push_beat({this.eth_header[31:0],ipv4_header[159:128]},0);
+      axis_bus.push_beat(this.ipv4_header[127:64],0);
+      axis_bus.push_beat(this.ipv4_header[63:0],0);
+      // If we support UDP with 0 payload length then this next burst needs TLAST support.
+      axis_bus.push_beat(this.udp_header[63:0],0);
+      payload_len = this.udp_header.length - 8;
+      if (use_assertion) begin
+         assert(payload_len==this.get_payload_length());
+      end else begin
+         if (payload_len!=this.get_payload_length())
+         $display("ERROR: UDP payload length missmatch. UDP header: %d,  Allocated %d", payload_len, this.get_payload_length());
+      end
+      this.rewind_payload();
+      // Iterate over whole beats.
+      while (payload_len > 8) begin
+         beat = 64'h0;
+         for (integer i=0; i < 8; i++) begin
+            beat = (beat << 8) | this.get_payload_octet();
+         end
+         axis_bus.push_beat(beat,0);
+         payload_len = payload_len - 8;
+      end
+      beat = 64'h0;
+      for (integer i=0; i < payload_len; i++) begin
+         beat = (beat << 8) | this.get_payload_octet();
+      end
+      axis_bus.push_beat(beat,1);
+    endtask // send_udp_to_ipv4_stream
 
 endclass : UDPPacket
 
