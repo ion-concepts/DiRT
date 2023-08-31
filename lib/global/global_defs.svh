@@ -25,6 +25,11 @@
 .vlog_bus_prefix``_tdata (sv_interface.tdata),     \
 .vlog_bus_prefix``_tlast (sv_interface.tlast),     \
 .vlog_bus_prefix``_tkeep (sv_interface.tkeep)
+// RFDC style 3 signal version of AXIS for streaming i/f
+`define MAP_AXIS_RFDC(vlog_bus_prefix, sv_interface)    \
+.vlog_bus_prefix``_tready (sv_interface.tready),   \
+.vlog_bus_prefix``_tvalid (sv_interface.tvalid),   \
+.vlog_bus_prefix``_tdata (sv_interface.tdata)
 //DRaT APB interface (in Pulp style)
 `define MAP_APB(vlog_bus_prefix,sv_interface)      \
 .vlog_bus_prefix``_paddr   (sv_interface.p_addr),   \
