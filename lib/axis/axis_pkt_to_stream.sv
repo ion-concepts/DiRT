@@ -55,6 +55,8 @@ module axis_pkt_to_stream
      input logic        status_enable,
      input logic        consumption_enable,
      input logic        tx_control_enable,
+     // Interval between consumption packets
+     input logic [7:0]  consumption_period,
      // FlowID to me used in status packet header
      input logic [31:0] status_flow_id,
      // FlowID to me used in consumption packet header
@@ -127,16 +129,14 @@ module axis_pkt_to_stream
                          );
 
 
-    //
-    // Drive output stream from here.
-    // Can output IQ with zero clk delay (or enter error state).
-    // Supplies payload beat to generate error status report packet.
-    //
+
+
     axis_tx_control axis_tx_control_i (
                                        .clk(clk),
                                        .rst(rst),
                                        .enable_in(tx_control_enable),
                                        .error_policy_next_packet_in(error_policy_next_packet),
+                                       .consumption_period(consumption_period),
                                        .axis_head_in(axis_head),
                                        .now_in(now),
                                        .late_in(late),
@@ -145,7 +145,7 @@ module axis_pkt_to_stream
                                        .generate_consumption_out(generate_consumption),
                                        .consumed_seq_num_out(consumed_seq_num),
                                        .run_out(run_out),
-                                       .axis_stream_out(axis_stream)
+                                       .axis_stream(axis_stream)
                                        );
 
     //
@@ -193,6 +193,8 @@ module axis_pkt_to_stream
    //-------------------------------------------------------------------------------
    // Debug Only below
    //-------------------------------------------------------------------------------
+
+
    //assign probe = 64'h0;
 /*
    assign probe[0] =  axis_pkt.tvalid;
@@ -209,9 +211,18 @@ module axis_pkt_to_stream
    assign probe[23] = axis_consumption.tready;
    assign probe[24] = axis_consumption.tlast;
    assign probe[32:25] = axis_consumption.tdata[39:32];
+   assign probe[26:11] = debug_tx_control[15:0];
+   assign probe[27] = status_enable;
+   assign probe[28] = consumption_enable;
+   assign probe[29] = tx_control_enable;
 
+   assign probe[30] = 0;
+   assign probe[31] = axis_stream_tready2;
+   assign probe[32] = axis_stream.tready;
    assign probe[33] = axis_stream.tvalid;
-   assign probe[34] = axis_stream.tready;
+   assign probe[34] = axis_stream_tready;
+
+
    assign probe[50:35] = axis_stream.tdata[15:0];
 
    assign probe[51] = run_out;

@@ -32,6 +32,8 @@ module dsp_1_channel
     input logic        csr_tx_status_enable,
     input logic        csr_tx_consumption_enable,
     input logic        csr_tx_control_enable,
+    // Interval between consumption packets
+    input logic [7:0]  csr_tx_consumption_period,
     // FlowID to me used in status packet header
     input logic [31:0] csr_tx_status_flow_id,
     // FlowID to me used in consumption packet header
@@ -53,11 +55,12 @@ module dsp_1_channel
     // Status Flags
     output logic       csr_stream_to_pkt_idle, // Assert when state machine is idle
     // System Time Output
-    input logic [63:0]  system_time,
+    input logic [63:0] system_time,
     // RX sample Input Bus
     axis_t.slave axis_rx_sample,
     // TX Sample Output Bus
     axis_t.master axis_tx_sample,
+    //input logic tx_strobe,
     // DRaT packets in
     axis_t.slave axis_tx_packet,
     // DRaT packets out
@@ -115,6 +118,7 @@ module dsp_1_channel
       .status_enable(csr_tx_status_enable),
       .consumption_enable(csr_tx_consumption_enable),
       .tx_control_enable(csr_tx_control_enable),
+      .consumption_period(csr_tx_consumption_period),
       // System time in
       .current_time(system_time),
       // FlowID to be used in status packet header

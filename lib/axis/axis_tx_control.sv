@@ -6,7 +6,7 @@
 // Parameterizable:
 //
 // Description:
-// This module comrises a state machine that interfaces to a downstream sample
+// This module comprises a state machine that interfaces to a downstream sample
 // oriented datapath, supplying samples with zero latency whenever TREADY is asserted.
 // On the upstream it interfaces with a FIFO that contains pairs of samples that are each
 // decorated with metadata containing timestamp and seqnum from original packet,
@@ -46,7 +46,8 @@ module axis_tx_control
      input logic         enable_in,
      // CSR (Control/Status Register) interface
      input logic         error_policy_next_packet_in,
-     // Interface to unframed sample FIFO
+     input logic [7:0]   consumption_period,
+                         // Interface to unframed sample FIFO
      axis_t.slave axis_head_in,
      // Time Flags
      input logic         now_in,
@@ -59,23 +60,23 @@ module axis_tx_control
      output logic [7:0]  consumed_seq_num_out,
      // Drive strobed sample pipeline
      output logic        run_out,
-     axis_t.master axis_stream_out
+     axis_t.master axis_stream
      );
 
     import drat_protocol::*;
     import axis_pkt_to_stream_pkg::*;
 
-    
+
     // Size of STATUS packet payload (One DRaT payload beat)
     localparam C_STATUS_WIDTH=64;
 
     // States
-    enum                 {
-                          S_IDLE,
-                          S_ODD,
-                          S_EVEN,
-                          S_ERROR
-                          } state;
+
+   localparam  S_IDLE=0;
+   localparam  S_ODD=1;
+   localparam  S_EVEN=2;
+   localparam  S_ERROR=3;
+   logic [1:0] state;
 
 
     // Various status packet payloads.
@@ -117,7 +118,7 @@ module axis_tx_control
     // when we get a mid-burst sequence number off-by-one error. We ignore configured error policy here
     // to simplify this logic, though in "next burst" we ultimately want to reset the seq_num, not inc it.
     assign inc_seq_num = (beat.eop && axis_head_in.tvalid && axis_head_in.tready) ||
-                         (state == S_ODD && axis_stream_out.tready && axis_head_in.tvalid && seq_num_plus_one);
+                         (state == S_ODD && axis_stream.tready && axis_head_in.tvalid && seq_num_plus_one);
 
 
     //
@@ -141,30 +142,66 @@ module axis_tx_control
     assign seq_num_plus_one  = ( beat.seq_num == (expected_seq_num + 1'b1));
 
     //
+    // Maintain counter that sets period of consumption packet generation
+    //
+   logic [7:0] consumption_counter;
+   logic       consumption_inc;
+
+
+    always_ff @(posedge clk) begin
+       if (rst) begin
+          generate_consumption_out <= 1'b1;
+          consumed_seq_num_out <= 0;
+          consumption_counter <= 1;
+       end else if (consumption_period == 0) begin
+          // Do nothing. No consumption packets generated. Also allows S/W reset of count.
+          consumption_counter <= 1;
+          generate_consumption_out <= 1'b0;
+       end else if (consumption_inc && (consumption_counter == consumption_period)) begin
+          // Issue consumption packet, reset count.
+          //
+          // Assert generate_consumption_out at instant of consumption
+          // but latch seq_num persistantly so we don't have to act on it this cycle.
+          // If we are so tardy externally that another packet gets consumed in the mean time
+          // then the seq_num is harmlessly updated to effectively update the original consumption report.
+          //
+          generate_consumption_out <= 1'b1;
+          consumed_seq_num_out <= beat.seq_num;
+          consumption_counter <= 1;
+       end else if (consumption_inc) begin
+          consumption_counter <= consumption_counter + 1;
+          generate_consumption_out <= 1'b0;
+       end else begin
+          // Default
+          generate_consumption_out <= 1'b0;
+       end
+    end // always_ff @ (posedge clk)
+
+
+
+    //
     // State Machine
     //
     always_ff @(posedge clk) begin
         if (rst) begin
             generate_pkt_out <= 1'b0;
             status_payload_out <= 64'h0;
-            generate_consumption_out <= 1'b0;
-            consumed_seq_num_out <= 0;
-            axis_stream_out.tvalid <= 1'b0;
+            axis_stream.tvalid <= 1'b0;
+            consumption_inc <= 1'b0;
             state <= S_IDLE;
         end else if (~enable_in) begin
             // Transition to S_ERROR immediatly if not enabled and discard input data
             // whilst driving zero valued samples out of egress.
             state <= S_ERROR;
-            axis_stream_out.tvalid <= 1'b1;
+            axis_stream.tvalid <= 1'b1;
             generate_pkt_out <= 1'b0;
             status_payload_out <= 64'h0;
-            generate_consumption_out <= 1'b0;
-            consumed_seq_num_out <= 0;
+            consumption_inc <= 1'b0;
         end else begin
             // Defaults
-            axis_stream_out.tvalid <= 1'b1;
+            axis_stream.tvalid <= 1'b1;
             generate_pkt_out <= 1'b0;
-            generate_consumption_out <= 1'b0;
+            consumption_inc <= 1'b0;
             // End defaults.
             case (state)
                 //
@@ -199,7 +236,7 @@ module axis_tx_control
                 // in the input TDATA bus.
                 //
                 S_ODD: begin
-                    if (axis_stream_out.tready) begin
+                    if (axis_stream.tready) begin
                         // Downstream wants a sample this cycle.
                         if (!axis_head_in.tvalid) begin
                             // ....but no sample available...RUH ROH underflow!
@@ -233,31 +270,19 @@ module axis_tx_control
                             state <= S_IDLE;
                             generate_pkt_out <= 1'b1;
                             status_payload_out <= status_eob_ack;
-                            //
-                            // Assert generate_consumption_out at instant of consumption
-                            // but latch seq_num persistantly so we don;t have to act on it this cycle.
-                            // If we are so tardy externally that another packet gets consumed in the mean time
-                            // then the seq_num is harmlessly updated to effectively update the original consumption report.
-                            //
-                            generate_consumption_out <= 1'b1;
-                            consumed_seq_num_out <= beat.seq_num;
+                            // Increment consumption counter
+                            consumption_inc <= 1'b1;
                         end else if (beat.eop && beat.odd) begin
                             // Odd length Packet is ending this cycle, remain in ODD sample state
                             state <= S_ODD;
-                            //
-                            // Assert generate_consumption_out at instant of consumption
-                            // but latch seq_num persistantly so we don;t have to act on it this cycle.
-                            // If we are so tardy externally that another packet gets consumed in the mean time
-                            // then the seq_num is harmlessly updated to effectively update the original consumption report.
-                            //
-                            generate_consumption_out <= 1'b1;
-                            consumed_seq_num_out <= beat.seq_num;
+                            // Increment consumption counter
+                            consumption_inc <= 1'b1;
                         end else begin
                             // Nothing special, move on to the even sample
                             state <= S_EVEN;
 
                         end // else: !if(bad_seq_num)
-                    end // if (axis_stream_out.tready)
+                    end // if (axis_stream.tready)
                 end // case: S_ODD
                 //
                 // In the S_EVEN state we process the second (right most) complex sample
@@ -266,7 +291,7 @@ module axis_tx_control
                 // of the paired odd sample.
                 //
                 S_EVEN: begin
-                    if (axis_stream_out.tready) begin
+                    if (axis_stream.tready) begin
                         // Downstream wants a sample this cycle.
                         if (beat.eop && beat.eob) begin
                             // Burst is ending on an even length packet this cycle.
@@ -274,29 +299,17 @@ module axis_tx_control
                             state <= S_IDLE;
                             generate_pkt_out <= 1'b1;
                             status_payload_out <= status_eob_ack;
-                            //
-                            // Assert generate_consumption_out at instant of consumption
-                            // but latch seq_num persistantly so we don;t have to act on it this cycle.
-                            // If we are so tardy externally that another packet gets consumed in the mean time
-                            // then the seq_num is harmlessly updated to effectively update the original consumption report.
-                            //
-                            generate_consumption_out <= 1'b1;
-                            consumed_seq_num_out <= beat.seq_num;
+                            // Increment consumption counter
+                            consumption_inc <= 1'b1;
                         end else begin
                             // Nothing special, move on to odd sample (FIFO will pop now)
                             state <= S_ODD;
                             if (beat.eop) begin
-                                //
-                                // Assert generate_consumption_out at instant of consumption
-                                // but latch seq_num persistantly so we don;t have to act on it this cycle.
-                                // If we are so tardy externally that another packet gets consumed in the mean time
-                                // then the seq_num is harmlessly updated to effectively update the original consumption report.
-                                //
-                                generate_consumption_out <= 1'b1;
-                                consumed_seq_num_out <= beat.seq_num;
+                                // Increment consumption counter
+                                consumption_inc <= 1'b1;
                             end
                         end
-                    end // if (axis_stream_out.tready)
+                    end // if (axis_stream.tready)
                 end // case: S_EVEN
                 //
                 // Transition to this state on Error when desirable to purge current packet
@@ -308,13 +321,8 @@ module axis_tx_control
                     if (axis_head_in.tvalid && beat.eop) begin
                         // We just drained whats left of the error causing packet out of FIFO.
                         //
-                        // Assert generate_consumption_out at instant of consumption
-                        // but latch seq_num persistantly so we don't have to act on it this cycle.
-                        // If we are so tardy externally that another packet gets consumed in the mean time
-                        // then the seq_num is harmlessly updated to effectively update the original consumption report.
-                        //
-                        generate_consumption_out <= 1'b1;
-                        consumed_seq_num_out <= beat.seq_num;
+                        // Increment consumption counter
+                        consumption_inc <= 1'b1;
                         // Time to make error policy decisions.
                         if (beat.eob || error_policy_next_packet_in) begin
                             // Policy dictates if we try to restart on a packet or burst boundry.
@@ -343,12 +351,12 @@ module axis_tx_control
                              // end of packet/burst boundry reached.
                              (state == S_ERROR) ||
                              // Downstream consumes even (2nd) sample from FIFO line
-                             ((state == S_EVEN) && axis_stream_out.tready) ||
+                             ((state == S_EVEN) && axis_stream.tready) ||
                              // Downstream consumes odd (1st) sample from FIFO line..
                              // but its the last sample in an odd length packet
                              // and so we pop this FIFO entry now since there is
                              // no even sample present to read.
-                             ((state == S_ODD) && axis_stream_out.tready && beat.odd && beat.eop);
+                             ((state == S_ODD) && axis_stream.tready && beat.odd && beat.eop);
     end
     //
     // Route samples into downstream datapath
@@ -356,16 +364,115 @@ module axis_tx_control
     always_comb begin
         // Any error or idle state causes zero valued IQ data to be passed downstream
         // including transitions to error states from S_ODD.
-        axis_stream_out.tdata = ((state == S_ODD) && axis_head_in.tvalid && ~bad_seq_num) ? 
+        axis_stream.tdata = ((state == S_ODD) && axis_head_in.tvalid && ~bad_seq_num) ?
                                 {beat.samples.i0,beat.samples.q0} :
-                                (state == S_EVEN) ? 
-                                {beat.samples.i1,beat.samples.q1} : 
+                                (state == S_EVEN) ?
+                                {beat.samples.i1,beat.samples.q1} :
                                 32'h0000_0000;
         run_out = ((state == S_ODD) && axis_head_in.tvalid && ~bad_seq_num) ? 1'b1 :
                   (state == S_EVEN) ? 1'b1 : 1'b0;
         // TODO: need to discuss downstream interface, how/where we zero fill etc
         // This currently assumes a pipeline that requires a sample immediately every time TREADY is asserted.
-        axis_stream_out.tlast = 1'b0;
+        axis_stream.tlast = 1'b0;
 
-    end
+    end // always_comb
+
+   //-------------------------------------------------------------------------------
+   // Debug Only below
+   //-------------------------------------------------------------------------------
+   wire [63:0]          probe ; // Debug
+
+   //assign probe = 64'h0;
+/*
+   assign probe[17:0] = {
+                         state,//[17:16]
+                         enable_in,
+                         beat.async,//14
+                         now_in,
+                         late_in,//12
+                         bad_seq_num,
+                         axis_head_in.tvalid, //10
+                         axis_head_in.tready,
+                         seq_num_plus_one,//8
+                         error_policy_next_packet_in,
+                         generate_consumption_out, //6
+                         consumption_inc,
+                         generate_pkt_out ,//4
+                         beat.eob,
+                         beat.odd, //2
+                         beat.eop,
+                         axis_stream.tready//0
+                         };
+
+   assign probe[63:18]  = 0;
+
+   ila_64 ila_64_i0 (
+	.clk(clk), // input wire clk
+
+	.probe0(probe[0]), // input wire [0:0]  probe0
+	.probe1(probe[1]), // input wire [0:0]  probe1
+	.probe2(probe[2]), // input wire [0:0]  probe2
+	.probe3(probe[3]), // input wire [0:0]  probe3
+	.probe4(probe[4]), // input wire [0:0]  probe4
+	.probe5(probe[5]), // input wire [0:0]  probe5
+	.probe6(probe[6]), // input wire [0:0]  probe6
+	.probe7(probe[7]), // input wire [0:0]  probe7
+	.probe8(probe[8]), // input wire [0:0]  probe8
+	.probe9(probe[9]), // input wire [0:0]  probe9
+	.probe10(probe[10]), // input wire [0:0]  probe10
+	.probe11(probe[11]), // input wire [0:0]  probe11
+	.probe12(probe[12]), // input wire [0:0]  probe12
+	.probe13(probe[13]), // input wire [0:0]  probe13
+	.probe14(probe[14]), // input wire [0:0]  probe14
+	.probe15(probe[15]), // input wire [0:0]  probe15
+	.probe16(probe[16]), // input wire [0:0]  probe16
+	.probe17(probe[17]), // input wire [0:0]  probe17
+	.probe18(probe[18]), // input wire [0:0]  probe18
+	.probe19(probe[19]), // input wire [0:0]  probe19
+	.probe20(probe[20]), // input wire [0:0]  probe20
+	.probe21(probe[21]), // input wire [0:0]  probe21
+	.probe22(probe[22]), // input wire [0:0]  probe22
+	.probe23(probe[23]), // input wire [0:0]  probe23
+	.probe24(probe[24]), // input wire [0:0]  probe24
+	.probe25(probe[25]), // input wire [0:0]  probe25
+	.probe26(probe[26]), // input wire [0:0]  probe26
+	.probe27(probe[27]), // input wire [0:0]  probe27
+	.probe28(probe[28]), // input wire [0:0]  probe28
+	.probe29(probe[29]), // input wire [0:0]  probe29
+	.probe30(probe[30]), // input wire [0:0]  probe30
+	.probe31(probe[31]), // input wire [0:0]  probe31
+	.probe32(probe[32]), // input wire [0:0]  probe32
+	.probe33(probe[33]), // input wire [0:0]  probe33
+	.probe34(probe[34]), // input wire [0:0]  probe34
+	.probe35(probe[35]), // input wire [0:0]  probe35
+	.probe36(probe[36]), // input wire [0:0]  probe36
+	.probe37(probe[37]), // input wire [0:0]  probe37
+	.probe38(probe[38]), // input wire [0:0]  probe38
+	.probe39(probe[39]), // input wire [0:0]  probe39
+	.probe40(probe[40]), // input wire [0:0]  probe40
+	.probe41(probe[41]), // input wire [0:0]  probe41
+	.probe42(probe[42]), // input wire [0:0]  probe42
+	.probe43(probe[43]), // input wire [0:0]  probe43
+	.probe44(probe[44]), // input wire [0:0]  probe44
+	.probe45(probe[45]), // input wire [0:0]  probe45
+	.probe46(probe[46]), // input wire [0:0]  probe46
+	.probe47(probe[47]), // input wire [0:0]  probe47
+	.probe48(probe[48]), // input wire [0:0]  probe48
+	.probe49(probe[49]), // input wire [0:0]  probe49
+	.probe50(probe[50]), // input wire [0:0]  probe50
+	.probe51(probe[51]), // input wire [0:0]  probe51
+	.probe52(probe[52]), // input wire [0:0]  probe52
+	.probe53(probe[53]), // input wire [0:0]  probe53
+	.probe54(probe[54]), // input wire [0:0]  probe54
+        .probe55(probe[55]), // input wire [0:0]  probe55
+	.probe56(probe[56]), // input wire [0:0]  probe56
+	.probe57(probe[57]), // input wire [0:0]  probe57
+	.probe58(probe[58]), // input wire [0:0]  probe58
+	.probe59(probe[59]), // input wire [0:0]  probe59
+	.probe60(probe[60]), // input wire [0:0]  probe60
+	.probe61(probe[61]), // input wire [0:0]  probe61
+	.probe62(probe[62]), // input wire [0:0]  probe62
+	.probe63(probe[63]) // input wire [0:0]  probe63
+);
+*/
 endmodule // axis_tx_control
