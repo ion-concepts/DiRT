@@ -11,7 +11,6 @@
 `include "global_defs.svh"
 `include "ethernet.sv"
 `include "drat_protocol.sv"
-
 module drat2eth_framer
   (
 
@@ -22,25 +21,27 @@ module drat2eth_framer
    input logic [47:0] csr_mac_src,
    input logic [31:0] csr_ipv4_dst,
    input logic [31:0] csr_ipv4_src,
+   input logic [15:0] csr_udp_src,
+   input logic [15:0] csr_udp_dst0,
    input logic [15:0] csr_udp_dst1,
-   input logic [15:0] csr_udp_src1,
    input logic [15:0] csr_udp_dst2,
-   input logic [15:0] csr_udp_src2,
    input logic [15:0] csr_udp_dst3,
-   input logic [15:0] csr_udp_src3,
    input logic [15:0] csr_udp_dst4,
-   input logic [15:0] csr_udp_src4,   
+   input logic [15:0] csr_udp_dst5,
+   input logic [15:0] csr_udp_dst6,
+   input logic [15:0] csr_udp_dst7,
+
    input logic        csr_enable,
-   output logic       csr_idle, 
-   // DRaT protocol input bus (64b TDATA)
-   axis_t.slave in_axis,
-   // Ethernet/IPv4/UDP encapsulated output bus (68b TDATA)
-   axis_t.master out_axis
-   
+   output logic       csr_idle,
+                      // DRaT protocol input bus (64b TDATA)
+                      axis_t.slave in_axis,
+                      // Ethernet/IPv4/UDP encapsulated output bus (68b TDATA)
+                      axis_t.master out_axis
+
    );
 
    // Constants
-   localparam logic [15:0] C_ETHERTYPE = 16'h0800; 
+   localparam logic [15:0] C_ETHERTYPE = 16'h0800;
    localparam logic [3:0]  C_VERSION = 4'd4;         // IPv4
    localparam logic [3:0]  C_IHL = 4'd5;             // Standard IPv4 header with no options
    localparam logic [7:0]  C_DSCP_ECN = 8'd0;        // DSCP and ECN unused
@@ -52,8 +53,8 @@ module drat2eth_framer
    localparam logic [15:0] C_UDP_CHECKSUM = 16'd0;   // UDP checksum dissabled.
    // Precalculate constant parts of IPv4 header checksum
    localparam logic [17:0] C_PRECALC_CHECKSUM = {C_VERSION, C_IHL, C_DSCP_ECN} + {C_FLAGS, C_FRAGMENT_OFFSET} + {C_TIME_TO_LIVE, C_PROTOCOL};
-   
-   
+
+
    drat_protocol::pkt_header_t drat_header;
    logic [15:0]            calc_length;
    logic [15:0]            udp_src, udp_dst;
@@ -62,7 +63,7 @@ module drat2eth_framer
    logic [16:0]            checksum_pre;
    logic [15:0]            ipv4_checksum;
 
-   
+
    //-----------------------------------------------------------------------------
    // State machine
    //-----------------------------------------------------------------------------
@@ -83,7 +84,7 @@ module drat2eth_framer
            state <= S_IDLE;
            drat_header <= '0;
            csr_idle <= 1'b0;
-           
+
         end else begin
            case (state)
              // Use first beat of new packet to populate DRaT header structure
@@ -92,9 +93,9 @@ module drat2eth_framer
                 if (csr_enable && in_axis.tvalid) begin
                    // Grab DRaT header
                    drat_header <= drat_protocol::populate_header_no_timestamp(in_axis.tdata);
-                   state <= S_HEADER1;                 
+                   state <= S_HEADER1;
                 end
-                csr_idle <= ~csr_enable;               
+                csr_idle <= ~csr_enable;
              end
              // 1st beat of header (Ethernet)
              S_HEADER1: begin
@@ -102,27 +103,27 @@ module drat2eth_framer
 	          state <= S_HEADER2;
              end
              // 2nd beat of header( Ethernet)
-             S_HEADER2: begin 
+             S_HEADER2: begin
                if (out_axis.tready == 1)
 	          state <= S_HEADER3;
              end
              // 3rd beat of header (Ethernet/IPv4)
-             S_HEADER3: begin 
+             S_HEADER3: begin
                if (out_axis.tready == 1)
 	          state <= S_HEADER4;
              end
              // 4th beat of header (IPv4)
-             S_HEADER4: begin 
+             S_HEADER4: begin
                if (out_axis.tready == 1)
 	          state <= S_HEADER5;
              end
              // 5th beat of header (IPv4)
-             S_HEADER5: begin 
+             S_HEADER5: begin
                 if (out_axis.tready == 1)
 	          state <= S_HEADER6;
             end
              // 6th beat of header (UDP)
-             S_HEADER6: begin 
+             S_HEADER6: begin
                if (out_axis.tready == 1)
 	          state <= S_PAYLOAD;
              end
@@ -151,28 +152,44 @@ module drat2eth_framer
       end
    end
 
-   // Use 2 LSB's of DRaT Flow_ID to choose from 4 UDP src/dst port tuples.
+   // Use 3 LSB's of DRaT Flow_ID to choose from 8 UDP src+dst port tuples (Where src is constant)
    always_comb begin
-      case(drat_header.flow_id[1:0])
+      case(drat_header.flow_id[2:0])
         0: begin
-           udp_src = csr_udp_src1;
-           udp_dst = csr_udp_dst1;
+           udp_src = csr_udp_src;
+           udp_dst = csr_udp_dst0;
         end
         1:begin
-           udp_src = csr_udp_src2;
-           udp_dst = csr_udp_dst2;
+           udp_src = csr_udp_src;
+           udp_dst = csr_udp_dst1;
         end
         2:begin
-           udp_src = csr_udp_src3;
-           udp_dst = csr_udp_dst3;
+           udp_src = csr_udp_src;
+           udp_dst = csr_udp_dst2;
         end
         3:begin
-           udp_src = csr_udp_src4;
+           udp_src = csr_udp_src;
+           udp_dst = csr_udp_dst3;
+        end
+        4: begin
+           udp_src = csr_udp_src;
            udp_dst = csr_udp_dst4;
         end
-      endcase // case (drat_header.flow_id[1:0])
+        5:begin
+           udp_src = csr_udp_src;
+           udp_dst = csr_udp_dst5;
+        end
+        6:begin
+           udp_src = csr_udp_src;
+           udp_dst = csr_udp_dst6;
+        end
+        7:begin
+           udp_src = csr_udp_src;
+           udp_dst = csr_udp_dst7;
+        end
+      endcase // case (drat_header.flow_id[2:0])
    end // always_comb
-   
+
 
    // AXIS handshaking. These are all Async timing paths through the block
    always_comb begin
@@ -185,10 +202,10 @@ module drat2eth_framer
    // Abreviated IPv4 header checksum calc because many fields are constant or pre-programmed.
    // Gate updates with state to capture correct IPv4 length value, fold in carrys out the MSBs, and pipeline for clock speed.
    always_ff @(posedge clk) begin
-      if (state == S_HEADER1) 
+      if (state == S_HEADER1)
         checksum_ipaddr[18:0] <= csr_ipv4_src[15:0] +  csr_ipv4_dst[15:0] + csr_ipv4_src[31:16] +  csr_ipv4_dst[31:16] + C_PRECALC_CHECKSUM;
       // Add in packet length then fold in 3 bits of carry
-      if (state == S_HEADER2) 
+      if (state == S_HEADER2)
         checksum_pre[16:0] <= (checksum_ipaddr_plus_len[15:0] + checksum_ipaddr_plus_len[18:16]);
       // Possibility of one more carry bit that needs to fold in
       if (state == S_HEADER3)
