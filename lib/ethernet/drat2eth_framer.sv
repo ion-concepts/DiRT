@@ -33,10 +33,10 @@ module drat2eth_framer
 
    input logic        csr_enable,
    output logic       csr_idle,
-                      // DRaT protocol input bus (64b TDATA)
-                      axis_t.slave in_axis,
-                      // Ethernet/IPv4/UDP encapsulated output bus (68b TDATA)
-                      axis_t.master out_axis
+   // DRaT protocol input bus (64b TDATA)
+   axis_t.slave in_axis,
+   // Ethernet/IPv4/UDP encapsulated output bus (68b TDATA)
+   axis_t.master out_axis
 
    );
 
