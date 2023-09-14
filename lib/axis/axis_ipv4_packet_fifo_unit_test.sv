@@ -4,26 +4,28 @@
 // Author:  Ian Buckley, Ion Concepts LLC
 //
 // Description:
-// Set of unit tests using SVUnit
+// Verify thtat:
+// * axis_ipv4_packet_fifo buffers packets correctly
+// * Discards ingressing packets due to lack of capacity
 //
 //
 // License: CERN-OHL-P (See LICENSE.md)
 //
 //-------------------------------------------------------------------------------
 
-`timescale 1ns/1ps
-
+`include "global_defs.svh"
 `include "svunit_defines.svh"
 `include "axis_ipv4_packet_fifo.sv"
-`include "axis_fifo.sv"
+
 
 module axis_ipv4_packet_fifo_unit_test;
-  timeunit 1ns; 
-  timeprecision 1ps;
-  import svunit_pkg::svunit_testcase;
+   timeunit 1ns;
+   timeprecision 1ps;
+   import ethernet_protocol::*;
+   import svunit_pkg::svunit_testcase;
 
-  string name = "axis_ipv4_packet_fifo_ut";
-  svunit_testcase svunit_ut;
+   string name = "axis_ipv4_packet_fifo_ut";
+   svunit_testcase svunit_ut;
 
    localparam SIZE=10;
    localparam PACKETS=8;
@@ -53,13 +55,18 @@ module axis_ipv4_packet_fifo_unit_test;
    logic csr_reset_stats;
    logic [31:0] csr_buffered_packets;
    logic [31:0] csr_dropped_packets;
-   
 
-   logic [63:0]   test_tdata;
-   logic          test_tlast;
-   logic [SIZE:0]  space, occupied;
-   logic [PACKETS-1:0] packet_count;
-   int                timeout;
+   // Declarations for Stimulus Thread(s)
+   logic        enable_stimulus;
+   logic        enable_response;
+   logic        ready_to_test;
+
+   // Declarations for Response Thread(s)
+   logic [67:0] golden_beat, response_beat;
+   logic        golden_tlast, response_tlast;
+
+   // Watchdog
+   int          timeout;
 
    //
    // Generate clk
@@ -76,7 +83,7 @@ module axis_ipv4_packet_fifo_unit_test;
   // running the Unit Tests on
   //===================================
 
-  
+
   axis_ipv4_packet_fifo
     #(
       .SIZE(SIZE),
@@ -96,7 +103,7 @@ module axis_ipv4_packet_fifo_unit_test;
       .out_axis(out_axis)
       );
 
- 
+
    //-------------------------------------------------------------------------------
    // Buffer input stimulus packet stream.
    // Pass first to a FIFO to buffer test stimulus.
@@ -137,7 +144,7 @@ module axis_ipv4_packet_fifo_unit_test;
       .rst(rst),
       .in_axis(out_axis),
       .out_axis(out_axis_pre),
-      .enable(enable_response0)
+      .enable(enable_response)
       );
 
    axis_fifo_wrapper
@@ -172,38 +179,44 @@ module axis_ipv4_packet_fifo_unit_test;
       .occupied()
       );
 
-  //===================================
-  // Build
-  //===================================
-  function void build();
-    svunit_ut = new(name);
-  endfunction
+   //===================================
+   // Build
+   //===================================
+   function void build();
+      svunit_ut = new(name);
+   endfunction
 
 
-  //===================================
-  // Setup for running the Unit Tests
-  //===================================
-  task setup();
-     svunit_ut.setup();
-     /* Place Setup Code Here */
-     // Reset UUT
-     @(posedge clk);
-     rst <= 1'b1;
-     idle_all();
-     repeat(10) @(posedge clk);
-     rst <= 1'b0;
+   //===================================
+   // Setup for running the Unit Tests
+   //===================================
+   task setup();
+      svunit_ut.setup();
+      /* Place Setup Code Here */
+      // Reset UUT
+      @(posedge clk);
+      rst <= 1'b1;
+      ready_to_test <= 0;
+      csr_reset_stats <= 0;
+      // Open all valves by default
+      enable_stimulus <= 1'b1;
+      enable_response <= 1'b1;
+      // Take all bench AXIS buses to a quiescent state
+      idle_all();
+      // De-assert reset after 10 clock cycles.
+      repeat(10) @(posedge clk);
+      rst <= 1'b0;
+   endtask
 
-  endtask
 
-
-  //===================================
-  // Here we deconstruct anything we
-  // need after running the Unit Tests
-  //===================================
-  task teardown();
-    svunit_ut.teardown();
-    /* Place Teardown Code Here */
-  endtask
+   //===================================
+   // Here we deconstruct anything we
+   // need after running the Unit Tests
+   //===================================
+   task teardown();
+      svunit_ut.teardown();
+      /* Place Teardown Code Here */
+   endtask
 
 
   //===================================
@@ -231,64 +244,209 @@ module axis_ipv4_packet_fifo_unit_test;
   // Check all emerge in order and unaltered.
   //===================================
   `SVTEST(pass_data)
-
-  idle_all();
+  `INFO("pass_data: Pass UDP/IPv4 packets through FIFO without filling it or discarding packets");
 
   fork
-/*
-     begin : master_thread
-	// PKT1
-	in0.write_beat(64'hffff_0000_ffff_0000,1'b0);
-	in0.write_beat(64'h0000_ffff_0000_ffff,1'b0);
-	in0.write_beat(64'h0000_0000_0000_0000,1'b0);
-	in0.write_beat(64'hffff_ffff_ffff_ffff,1'b1);
-	// PKT2
-	in0.write_beat(64'hffff_1111_ffff_1111,1'b0);
-	in0.write_beat(64'h1111_ffff_1111_ffff,1'b0);
-	in0.write_beat(64'h1111_1111_1111_1111,1'b0);
-	in0.write_beat(64'hffff_ffff_ffff_ffff,1'b1);
-     end
-     begin : slave_thread
-	// PKT1
-	out0.read_beat(test_tdata,test_tlast);
-	`FAIL_UNLESS(test_tdata === 64'hffff_0000_ffff_0000);
-	`FAIL_UNLESS(test_tlast === 1'b0);
-	out0.read_beat(test_tdata,test_tlast);
-	`FAIL_UNLESS(test_tdata === 64'h0000_ffff_0000_ffff);
-	`FAIL_UNLESS(test_tlast === 1'b0);
-	out0.read_beat(test_tdata,test_tlast);
-	`FAIL_UNLESS(test_tdata === 64'h0000_0000_0000_0000);
-	`FAIL_UNLESS(test_tlast === 1'b0);
-	out0.read_beat(test_tdata,test_tlast);
-	`FAIL_UNLESS(test_tdata === 64'hffff_ffff_ffff_ffff);
-	`FAIL_UNLESS(test_tlast === 1'b1);
-	// PKT2
-	out0.read_beat(test_tdata,test_tlast);
-	`FAIL_UNLESS(test_tdata === 64'hffff_1111_ffff_1111);
-	`FAIL_UNLESS(test_tlast === 1'b0);
-	out0.read_beat(test_tdata,test_tlast);
-	`FAIL_UNLESS(test_tdata === 64'h1111_ffff_1111_ffff);
-	`FAIL_UNLESS(test_tlast === 1'b0);
-	out0.read_beat(test_tdata,test_tlast);
-	`FAIL_UNLESS(test_tdata === 64'h1111_1111_1111_1111);
-	`FAIL_UNLESS(test_tlast === 1'b0);
-	out0.read_beat(test_tdata,test_tlast);
-	`FAIL_UNLESS(test_tdata === 64'hffff_ffff_ffff_ffff);
-	`FAIL_UNLESS(test_tlast === 1'b1);
-	disable watchdog_thread;
-  end
- */
-  begin : watchdog_thread
-	 timeout = 10000;	 
-	 while(1) begin
-	    `FAIL_IF(timeout==0);
-	    timeout = timeout - 1;
-	    @(negedge clk);	    
-	 end	
-      end    
-join
+     begin : load_stimulus
+        //
+        UDPPacket test_packet;
+        //
+        // Reset statistics registers
+        csr_reset_stats <= 0;
+        @(negedge clk);
+        csr_reset_stats <= 1;
+        @(negedge clk);
+        csr_reset_stats <= 0;
+        @(negedge clk);
+        // Open valves to isolate UUT
+        enable_stimulus <= 0;
+        // Build 16 UDP packets to flow through buffer
+        // Keep sizes within buffer total size so that no packet is a discard candidate.
+        for (integer i = 0; i < 15; i++) begin
+           // Reconstruct (and initialize) packet each iteration
+           // Packet size grows 1 octet each time.
+           // Need to set TUSER bits appropriately in response to valid octets in
+           // last beat like simple_gemac would
+           test_packet = UDPPacket::new(i);
+           test_packet.add_payload_octet(i[7:0]);
+           test_packet.set_udp_src_port(i[15:0]+1);
+           test_packet.set_udp_dst_port(i[15:0]);
+           test_packet.set_ipv4_src_addr({8'd1,8'd2,8'd3,8'd4});
+           test_packet.set_ipv4_dst_addr({8'd5,8'd6,8'd7,8'd8});
+           test_packet.set_mac_src({8'd0,8'd1,8'd2,8'd3,8'd4,8'd5}); // Unused
+           test_packet.set_mac_dst({8'd0,8'd6,8'd7,8'd8,8'd9,8'd10}); // Unused
+           // Queue packet to UUT
+           test_packet.send_udp_to_ipv4_stream(in_axis_pre,1);
+           // Add Packet to Golden response FIFO
+           test_packet.send_udp_to_ipv4_stream(in_axis_golden,1);
+        end // for (integer i = 0; i < 32; i++)
+        //
+        // Stimulus fully loaded, initialise system for test and release stimulus
+        // by opening valve.
+        //
+        @(negedge clk);
+        @(negedge clk);
+        // 100% duty cycle on AXIS input bus.
+        enable_stimulus <= 1'b1;
+        // Let response threads run
+        ready_to_test <= 1;
+        //
+        `INFO("pass_data: Stimulus Done");
+        //
+     end // block: load_stimulus
 
-`SVTEST_END
+
+     // Response thread for output
+     begin: read_response_out
+        // Wait until stimulus is loaded.
+        while (!ready_to_test) @(posedge clk);
+        `INFO("pass_data: read_response_out running");
+        // 100% duty cycle on output buses
+        enable_response <= 1'b1;
+        // While golden response FIFO not empty
+        while (out_axis_golden.tvalid) begin
+           // Pop golden response.
+           out_axis_golden.read_beat(golden_beat,golden_tlast);
+           // Pop response.
+           out_axis_post.read_beat(response_beat,response_tlast);
+           // Compare response to golden
+           `FAIL_UNLESS_EQUAL(golden_beat,response_beat);
+           `FAIL_UNLESS_EQUAL(golden_tlast,response_tlast);
+        end // while (out0_axis_golden.tvalid)
+        // Check CSR status registers hold correct values.
+        `FAIL_UNLESS(csr_buffered_packets === 32'd15)
+        `FAIL_UNLESS(csr_dropped_packets === 32'd0)
+        `INFO("pass_data: read_response_out finished");
+        disable watchdog_thread;
+     end // block: read_response_out
+
+     begin : watchdog_thread
+	timeout = 10000;
+	while(1) begin
+	   `FAIL_IF(timeout==0);
+	   timeout = timeout - 1;
+	   @(negedge clk);
+	end
+     end
+  join
+
+  `SVTEST_END
+
+  //===================================
+  // Test:
+  //
+  // drop_packet
+  //
+  // Feed packets to fifo until full.
+  // Feed one more that gets dropped.
+  // Then feed a smaller packet that fits.
+  // Check all emerge in order and unaltered.
+  //===================================
+  `SVTEST(drop_packet)
+  `INFO("drop_packet: Pass UDP/IPv4 packets through FIFO, filling it, and discarding 8th large packet, then adding more small packets");
+
+  fork
+     begin : load_stimulus
+        //
+        UDPPacket test_packet;
+        //
+        // Reset statistics registers
+        csr_reset_stats <= 0;
+        @(negedge clk);
+        csr_reset_stats <= 1;
+        @(negedge clk);
+        csr_reset_stats <= 0;
+        @(negedge clk);
+        // Close valve to load UUT immediately as we crreate packets
+        enable_stimulus <= 1;
+        // Build 8 1KB UDP packets to fill buffer...last one should get dropped...leaving less than 1KB free in buffer
+        // Keep sizes within buffer total size so that no packet is a discard candidate.
+        for (integer i = 0; i < 8; i++) begin
+           // Reconstruct (and initialize) packet each iteration
+           // Packet size grows 1 octet each time.
+           // Need to set TUSER bits appropriately in response to valid octets in
+           // last beat like simple_gemac would
+           test_packet = UDPPacket::new(1024); //1024+32 octet packets
+           test_packet.set_udp_src_port(i[15:0]+1);
+           test_packet.set_udp_dst_port(i[15:0]);
+           test_packet.set_ipv4_src_addr({8'd1,8'd2,8'd3,8'd4});
+           test_packet.set_ipv4_dst_addr({8'd5,8'd6,8'd7,8'd8});
+           test_packet.set_mac_src({8'd0,8'd1,8'd2,8'd3,8'd4,8'd5}); // Unused
+           test_packet.set_mac_dst({8'd0,8'd6,8'd7,8'd8,8'd9,8'd10}); // Unused
+           // Queue packet to UUT
+           test_packet.send_udp_to_ipv4_stream(in_axis_pre,1);
+           // Add Packet to Golden response FIFO
+           if (i !== 7) test_packet.send_udp_to_ipv4_stream(in_axis_golden,1); // Dropped 8th packet from Golden Reference
+        end // for (integer i = 0; i < 8; i++)
+
+        // Now send 8 small packets that fit in buffer
+        for (integer i = 8; i < 16; i++) begin
+           test_packet = UDPPacket::new(1); //1+32 octet packets
+           test_packet.set_udp_src_port(i[15:0]+1);
+           test_packet.set_udp_dst_port(i[15:0]);
+           test_packet.set_ipv4_src_addr({8'd1,8'd2,8'd3,8'd4});
+           test_packet.set_ipv4_dst_addr({8'd5,8'd6,8'd7,8'd8});
+           test_packet.set_mac_src({8'd0,8'd1,8'd2,8'd3,8'd4,8'd5}); // Unused
+           test_packet.set_mac_dst({8'd0,8'd6,8'd7,8'd8,8'd9,8'd10}); // Unused
+           // Queue packet to UUT
+           test_packet.send_udp_to_ipv4_stream(in_axis_pre,1);
+           // Add Packet to Golden response FIFO
+           test_packet.send_udp_to_ipv4_stream(in_axis_golden,1); // Dropped 8th packet from Golden Reference
+        end // for (integer i = 8; i < 16; i++)
+        //
+        // Stimulus fully loaded, initialise system for test and release stimulus
+        // by opening valve.
+        //
+        @(negedge clk);
+        @(negedge clk);
+        // 100% duty cycle on AXIS input bus.
+        //enable_stimulus <= 1'b1;
+        // Let response threads run
+        ready_to_test <= 1;
+        //
+        `INFO("drop_packet: Stimulus Done");
+        //
+     end // block: load_stimulus
+
+
+     // Response thread for output
+     begin: read_response_out
+        // Close response vavle so data ccumulates in UUT
+        enable_response <= 1'b0;
+        // Wait until stimulus is loaded.
+        while (!ready_to_test) @(posedge clk);
+        `INFO("drop_packet: read_response_out running");
+        // 100% duty cycle on output buses
+        enable_response <= 1'b1;
+        // While golden response FIFO not empty
+        while (out_axis_golden.tvalid) begin
+           // Pop golden response.
+           out_axis_golden.read_beat(golden_beat,golden_tlast);
+           // Pop response.
+           out_axis_post.read_beat(response_beat,response_tlast);
+           // Compare response to golden
+           `FAIL_UNLESS_EQUAL(golden_beat,response_beat);
+           `FAIL_UNLESS_EQUAL(golden_tlast,response_tlast);
+        end // while (out0_axis_golden.tvalid)
+        // Check CSR status registers hold correct values.
+        `FAIL_UNLESS(csr_buffered_packets === 32'd15)
+        `FAIL_UNLESS(csr_dropped_packets === 32'd1)
+        `INFO("drop_packet: read_response_out finished");
+        disable watchdog_thread;
+     end // block: read_response_out
+
+     begin : watchdog_thread
+	timeout = 10000;
+	while(1) begin
+	   `FAIL_IF(timeout==0);
+	   timeout = timeout - 1;
+	   @(negedge clk);
+	end
+     end
+  join
+
+  `SVTEST_END
+
 
 `SVUNIT_TESTS_END
 
