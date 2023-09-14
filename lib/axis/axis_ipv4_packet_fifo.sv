@@ -6,7 +6,7 @@
 // Description:
 //
 // Wraps regular stream FIFO's (1 clock only) to make them specificly IPv4 packet aware.
-// Inspects IPv4 Headers of packet to find size and verifies there is local space to buffer 
+// Inspects IPv4 Headers of packet to find size and verifies there is local space to buffer
 // the entire packet...if there is not enough space packet is immediately dropped.
 // Only allows a packet to egress once its fully ingressed. This is very useful
 // when packet beats arrive at a slow rate relative to the (current) clock.
@@ -48,20 +48,20 @@ module axis_ipv4_packet_fifo
     // Output Bus
     //
     axis_t.master out_axis
-   
-   
+
+
     );
-   
+
    axis_t #(.WIDTH(WIDTH)) in_fifo_axis(.clk(clk));
    axis_t #(.WIDTH(WIDTH)) out_fifo_axis(.clk(clk));
-   
+
    // Occupancy
-   logic [SIZE:0] space;  
+   logic [SIZE:0] space;
    logic [SIZE:0] occupied;
    logic [MAX_PACKETS-1:0] packet_count;
    logic                   enable_ready;
-   
-   
+
+
    //---------------------------------------------------------
    // State machine declarations
    //---------------------------------------------------------
@@ -70,7 +70,7 @@ module axis_ipv4_packet_fifo
                             BUFFER,
                             DROP
                             } state;
-   
+
 
    //-------------------------------------------------------------------------------
    // In DiRT, and IPv4 packet has the following alignment on 64b AXIS:
@@ -82,10 +82,13 @@ module axis_ipv4_packet_fifo
        if(rst) begin
           state <= IDLE;
           enable_ready <= 1'b0;
+          csr_buffered_packets <= 0;
+          csr_dropped_packets <= 0;
+
        end else begin
           case(state)
             // Sit in IDLE state waiting for asserted TVALID that indicates first beat of an IPv$ packet.
-            IDLE: begin 
+            IDLE: begin
                if (in_fifo_axis.tvalid) begin
                   // Is IPv4 packet size (in quad words) is smaller than remaining space in FIFO?
                   // (Also recall that by ignoring 3 LSB's of IPv4 size there mayne upto 7 more octets,
@@ -99,6 +102,11 @@ module axis_ipv4_packet_fifo
                      state <= DROP;
                   end
                end // if (in_fifo_axis.tvalid)
+               // Reset has higher precidence than counter increment
+               if (csr_reset_stats) begin
+                  csr_dropped_packets <= 0;
+                  csr_buffered_packets <= 0;
+               end
             end
             // Sit in BUFFER adding burst beats to FIFO until TLAST is asserted
             BUFFER: begin
@@ -107,6 +115,11 @@ module axis_ipv4_packet_fifo
                   csr_buffered_packets <= csr_buffered_packets + 1'b1;
                   enable_ready <= 1'b0;
                end
+               // Reset has higher precidence than counter increment
+               if (csr_reset_stats) begin
+                  csr_dropped_packets <= 0;
+                  csr_buffered_packets <= 0;
+               end
             end
             // Sit in DROP discarding beats until TLAST is asserted
             DROP: begin
@@ -114,6 +127,11 @@ module axis_ipv4_packet_fifo
                   state <= IDLE;
                   csr_dropped_packets <= csr_dropped_packets + 1'b1;
                   enable_ready <= 1'b0;
+               end
+               // Reset has higher precidence than counter increment
+               if (csr_reset_stats) begin
+                  csr_dropped_packets <= 0;
+                  csr_buffered_packets <= 0;
                end
             end
           endcase
@@ -128,8 +146,11 @@ module axis_ipv4_packet_fifo
       in_fifo_axis.tready =
                           ((state == BUFFER) && enable_ready && out_fifo_axis.tready) | // Buffer this packet
                           ((state == DROP) && enable_ready); // Discard this packet
+      out_fifo_axis.tdata = in_fifo_axis.tdata;
+      out_fifo_axis.tlast = in_fifo_axis.tlast;
+
    end
-  
+
    //-------------------------------------------------------------------------------
    // AXI minimal FIFO breaks all combinatorial through paths
    //-------------------------------------------------------------------------------
@@ -163,15 +184,5 @@ module axis_ipv4_packet_fifo
       .packet_count(packet_count)
       );
 
-   
+
 endmodule
-  
-
-                         
-
-
-
-
-
-
-
