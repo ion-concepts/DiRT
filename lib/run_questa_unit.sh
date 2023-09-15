@@ -49,7 +49,7 @@ echo "runSVUnit"
 #    -voptargs=+acc=npr causes internal nodes to not be eliminated in optimization
 #    -permit_unmatched_virtual_intf solves a problem with virtual interfaces not matching any real interface
 #
-runSVUnit -s questa --c_arg "-incdir ../../global -incdir ../../axis -incdir ../../ethernet +libext+.sv -y ../../axis -y ../../dsp -y ../../ethernet -y /opt/Xilinx/Vivado/2022.2/data/verilog/src/unisims" \
+runSVUnit -s questa --c_arg "-incdir ../../global -incdir ../../axis -incdir ../../ethernet +libext+.sv +libext+.v -y ../../axis -y ../../dsp -y ../../ethernet -y /opt/Xilinx/Vivado/2022.2/data/verilog/src/unisims" \
            --r_arg "-permit_unmatched_virtual_intf" -f dependencies.f -o sim $UNIT
 if [ $? -ne 0 ]; then exit 1 ; fi
 popd # 2>&1 > /dev/null
