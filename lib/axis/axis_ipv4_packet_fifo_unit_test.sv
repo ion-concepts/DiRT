@@ -16,7 +16,7 @@
 `include "global_defs.svh"
 `include "svunit_defines.svh"
 `include "axis_ipv4_packet_fifo.sv"
-
+`include "ethernet.sv"
 
 module axis_ipv4_packet_fifo_unit_test;
    timeunit 1ns;
