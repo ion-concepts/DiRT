@@ -50,6 +50,6 @@ echo "runSVUnit"
 #    -permit_unmatched_virtual_intf solves a problem with virtual interfaces not matching any real interface
 #
 runSVUnit -s questa --c_arg "-incdir ../../global -incdir ../../axis -incdir ../../ethernet +libext+.sv -y ../../axis -y ../../dsp -y ../../ethernet" \
-        --r_arg "-gui -permit_unmatched_virtual_intf -voptargs=+acc=npr" -f dependencies.f -o sim $UNIT
+        -y /opt/Xilinx/Vivado/2022.2/data/verilog/src/unisims --r_arg "-gui -permit_unmatched_virtual_intf -voptargs=+acc=npr" -f dependencies.f -o sim $UNIT
 if [ $? -ne 0 ]; then exit 1 ; fi
 popd # 2>&1 > /dev/null
