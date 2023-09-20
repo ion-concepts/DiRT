@@ -89,7 +89,7 @@ module dsp_1_channel_unit_test;
    //-------------------------------------------------------------------------------
    // Siggen provides waveform to RX
    //-------------------------------------------------------------------------------
-/*
+
    axis_siggen axis_siggen_i0
      (
       .clk(clk),
@@ -101,20 +101,16 @@ module dsp_1_channel_unit_test;
       // Waveform output
       .axis_stream_out(axis_rx_sample)
       );
-*/
 
-   dsp_loopback
-     #(
-       .COUNT_SIZE(8)
-       )
-   dsp_loopback_i0
+/*
+   dsp_loopback  dsp_loopback_i0
      (
       .clk(clk),
       .rst(rst),
       .axis_stream_in(axis_tx_sample),
       .axis_stream_out(axis_rx_sample)
       );
-
+*/
    //-------------------------------------------------------------------------------
    // Null Sink provides place to send DRaT packets
    //-------------------------------------------------------------------------------

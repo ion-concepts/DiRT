@@ -11,5 +11,7 @@
 
 DIRT_DSP_SRCS = $(abspath $(addprefix $(DIRT_DIR)/lib/dsp/, \
 dsp_1_channel.sv \
+dsp_rx.sv \
+dsp_tx.sv \
 dsp_loopback.sv \
 ))
