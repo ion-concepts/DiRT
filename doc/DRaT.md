@@ -35,6 +35,10 @@ ACK can be issued for any non-error packet except the last packet in a burst and
 
 ![ack](./ack.svg)
 
+![ack](./ack1.svg)
+
+
+
 ##### ACK_EOB
 
 ACK_EOB is issued when a DRaT sample data packet signaling EOB, for example INT16_COMPLEX_EOB, is fully consumed by the Defamer at a Flow Sink.
@@ -59,6 +63,10 @@ The LATE error is issued when a packet that starts a new burst for transmission 
 
 ![time_error](./time_error.svg)
 
+##### UNDERFLOW
+
+The UNDERFLOW error is issued when a burst is in progress and the ingress to the Flow sink is unable to sustain the egress sample stream.
+
 ### Source Flow Control
 
 At a H/W level there is extensive use of streaming point-to-point links within DiRT that use low level H/W to ready-valid handshake at each hop. However individual dataflows also require end-to-end flow control. The need for end-to-end flow control is driven by two main factors:
@@ -74,7 +82,7 @@ The framing of DRaT is weighted by a desire to implement hardware using a 64bit 
 
 DRaT is designed to be easy to ecapsulate in a surrounding transport. By convention it would be transported as part of a UDP/IP encapsulation, typically over ethernet between hosts and Radio H/W. Endianness follows normal IPv4 network byte order norms.
 
-![Ethernet framing of DRaT](Digital Radio Transport - DRaT.svg)
+![Ethernet framing of DRaT](Digital_Radio_Transport_DRaT.svg)
 
 #### Framing Formats
 
@@ -84,31 +92,31 @@ DRaT attempts to use a very orthogonal packet encoding such that all defined fra
 
 Sample transport of IQ data in a 2's compliment fractional integer representation. Each sample componant represents a value -1 <= x < 1. Each packet in a burst has type INT16_COMPLEX (or INT16_COMPLEX_ASYNC is there is no valid timestamp) unitil the last  packet, which is type INT16_COMPLEX_EOB (or INT16_COMPLEX_ASYNC_EOB) to signal the end of the burst. The SeqID is reset to for the first packet in each new burst and is expected to increment modulo 256 with each new packet.
 
-![DRaT - INT16_COMPLEX](./DRaT - INT16_COMPLEX.svg)
+![DRaT - INT16_COMPLEX](./DRaT_INT16_COMPLEX.svg)
 
 ##### WRITE_MMxx
 
 Create single beat memory-mapped write in 32bit (byte) address space. Writes should not cross alignment boundries so they map well to downstream generated AXI4Lite etc transactions.
 
-![DRaT - WRITE_MMxx](./DRaT - WRITE_MMxx.svg)
+![DRaT - WRITE_MMxx](./DRaT_WRITE_MMxx.svg)
 
 ##### READ_MMxx
 
 Create a single beat memory-mapped read in 32bit (byte) address space. Reads should not cross alignment boundries so they map well to downstream generated AXI4Lite etc transactions. The Read RESPONSE_MMxx is returned in a different packet that reuses the SeqID of the Read request.
 
-![DRaT - READ_MMxx](./DRaT - READ_MMxx.svg)
+![DRaT - READ_MMxx](./DRaT_READ_MMxx.svg)
 
 ##### RESPONSE_MMxx
 
 Read RESPONSE_MMxx packets for the various READ_MMxx packet types. SeqID is copied from the original Read request as a transaction ID.
 
-![DRaT - RESPONSE_MMxx](./DRaT - RESPONSE_MMxx.svg)
+![DRaT - RESPONSE_MMxx](./DRat_RESPONSE_MMxx.svg)
 
 ##### STATUS
 
 Various types of framing are returned for the different STATUS packet sub-types, normally including the SeqID of the original packet they relate to.
 
-![DRaT - STATUS](./DRaT - STATUS.svg)
+![DRaT - STATUS](./DRaT_STATUS.svg)
 
 
 
@@ -116,7 +124,7 @@ Various types of framing are returned for the different STATUS packet sub-types,
 
 The TIME_REPORT frame is used to report the current H/W system time to listeners so they can both add timestamps to synchornous Tx bursts and estimate current buffer fullness at H/W. It can be transported as unicast/multicast/broadcast IP/UDP as required by the system without any effect on DRaT framing and functionality. Typical systems will send the TIME_REPORT frame at regular intervals and frequently such that sample rates  and elastic buffers in use in the particular system will be cause buffering to absorb latencies and jitter inherant to the system, provding uninterupted sample bursts to data converters or other downstream processing. TIME_REPORT might orginate from a different place in the system than the sample stream sink/sources if time is managed coherantly across distributed H/W.
 
-![DRaT - TIME_REPORT](./DRaT - TIME_REPORT.svg)
+![DRaT - TIME_REPORT](./DRaT_TIME_REPORT.svg)
 
 #### Data Notations
 
@@ -125,10 +133,10 @@ The convention in the documentation of Internet Protocols is to express numbers 
 The order of transmission of the header and data described in this document is resolved to the octet level.  Whenever a diagram shows a group of octets, the order of transmission of those octets is the normal order in which they are read in English.  For example, in the following diagram the octets are transmitted in the order they are numbered.
 
 
-  ![DRaT - Transmission Order of Bytes](./DRaT - Transmission Order of Bytes.svg)
+  ![DRaT - Transmission Order of Bytes](./DRaT_Transmission_Order_of_Bytes.svg)
 
 Whenever an octet represents a numeric quantity the left most bit in the diagram is the high order or most significant bit.  That is, the bit labeled 0 is the most significant bit.  For example, the following diagram represents the value 170 (decimal).
 
-![DRaT - Transmission Order of Bits](./DRaT - Transmission Order of Bits.svg)
+![DRaT - Transmission Order of Bits](./DRaT_Transmission_Order_of_Bits.svg)
 
 Similarly, whenever a multi-octet field represents a numeric quantity the left most bit of the whole field is the most significant bit.  When a multi-octet quantity is transmitted the most significant octet is transmitted first.
