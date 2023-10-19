@@ -44,7 +44,7 @@ module dsp_tx
     // DRaT packets in
     axis_t.slave axis_tx_packet,
     // DRaT packets out
-    axis_t.master axis_tx_status
+    axis_t.master axis_tx_status_packet
     );
 
    wire [63:0] probe ; // Debug
@@ -60,7 +60,7 @@ module dsp_tx
    axis_t #(.WIDTH(64)) axis_tx_consumption(.clk(clk));
    axis_t #(.WIDTH(64)) axis_null_src0(.clk(clk));
    axis_t #(.WIDTH(64)) axis_null_src1(.clk(clk));
-   axis_t #(.WIDTH(64)) axis_tx_status_mux(.clk(clk));
+   axis_t #(.WIDTH(64)) axis_tx_status_packet_mux(.clk(clk));
 
 
 
@@ -142,7 +142,7 @@ module dsp_tx
                         .in1_axis(axis_tx_consumption),
                         .in2_axis(axis_null_src0),
                         .in3_axis(axis_null_src1),
-                        .out_axis(axis_tx_status_mux)
+                        .out_axis(axis_tx_status_packet_mux)
                         );
 
    axis_fifo_wrapper  #(
@@ -151,8 +151,8 @@ module dsp_tx
    axis_fifo_status_i0 (
                         .clk(clk),
                         .rst(rst),
-                        .in_axis(axis_tx_status_mux),
-                        .out_axis(axis_tx_status),
+                        .in_axis(axis_tx_status_packet_mux),
+                        .out_axis(axis_tx_status_packet),
                         .space(),
                         .occupied()
                         );
