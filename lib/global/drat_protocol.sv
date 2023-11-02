@@ -60,6 +60,10 @@ typedef enum logic [7:0]
    INT16x16_COMPLEX_ASYNC=8'h28,
    // Integer complex numbers in a 16 vectors of 16bit format. Timestamp unused. Marks end of burst.
    INT16x16_COMPLEX_ASYNC_EOB=8'h38,
+   // 2bit coded integer in PPRX specific packed format.
+   PPRX2_REAL=8'h09,
+   // 2bit coded integer in PPRX specific packed format.
+   PPRX2_REAL_EOB=8'h19,
    // Create single 32bit memory mapped write transaction (single beat - no burst).
    WRITE_MM32=8'h80,   
    // Create single 32bit memory mapped read transaction (single beat - no burst).
@@ -514,6 +518,7 @@ class DRaTPacket;
       `FAIL_UNLESS_EQUAL(tlast,0);
       this.set_raw_header(tdata);
       axis_bus.pull_beat(tdata,tlast);
+      `FAIL_UNLESS_EQUAL(tlast,0);
       this.set_timestamp(tdata);
       payload = new[bytes_to_beats(this.header.length-16)];
       // Assert on tlast is done one pass in arrears so that we can check for tlast==1
