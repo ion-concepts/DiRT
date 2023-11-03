@@ -70,7 +70,7 @@ module dsp_1_channel
    //-------------------------------------------------------------------------------
    // TX
    //-------------------------------------------------------------------------------
-   axis_t #(.WIDTH(64)) axis_tx_status(.clk(clk));
+   axis_t #(.WIDTH(64)) axis_tx_status_packet(.clk(clk));
    
    dsp_tx
      #(
@@ -102,7 +102,7 @@ module dsp_1_channel
       // DRaT packets in
       .axis_tx_packet(axis_tx_packet),
       // DRaT packets out
-      .axis_tx_status(axis_tx_status)
+      .axis_tx_status_packet(axis_tx_status_packet)
       );
 
    //-------------------------------------------------------------------------------
@@ -171,7 +171,7 @@ module dsp_1_channel
    axis_mux4_rx_packet_i1 (
                         .clk(clk),
                         .rst(rst),
-                        .in0_axis(axis_tx_status),
+                        .in0_axis(axis_tx_status_packet),
                         .in1_axis(axis_rx_packet_pre_mux),
                         .in2_axis(axis_null_src0),
                         .in3_axis(axis_null_src1),
