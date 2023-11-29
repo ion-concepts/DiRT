@@ -43,7 +43,7 @@ module axis_stream_to_pkt_backpressured
     // Packet FIFO has 2**PACKET_FIFO_SIZE entries
     parameter PACKET_FIFO_SIZE=8,
     // Width of IQ samples from Datapath. If <16b then samples MSB justified into packets.
-    parameter IQ_WIDTH=16 
+    parameter IQ_WIDTH=16
     )
 
    (
@@ -78,20 +78,22 @@ module axis_stream_to_pkt_backpressured
    // Widely used boolean expressions
    logic               end_of_packet;
    logic [13:0]        input_count; // Counting in 32bit INT16_COMPLEX
-   
-   always_comb begin
-      end_of_packet = (input_count >= packet_size);
-   end
+   logic               end_of_burst;
+   logic [47:0]        burst_count;
 
-   logic end_of_burst;
-   logic [47:0] burst_count;
-
-   // EOB asserted as the remaining samples in the burst falls below
-   // the traget size for packets, meaning this will be the last one.
-   // NOTE: We override this logic for an "inifinite burst" which is
-   // programmed as a burst_size of 0.
    always_comb begin
-      end_of_burst = (burst_count <= packet_size) && (burst_size != 0);
+      // The second condition ensures that the last packet in a burst is
+      // terminated before reaching the packet_size if the burst_size is not an
+      // integer multiple of packet_size. NOTE: We override this logic for an
+      // "infinite burst", which is programmed as a burst_size of 0.
+      end_of_packet = (input_count >= packet_size) || ((burst_count <= 1) && (burst_size != 0));
+
+      // EOB asserted when the burst_count reaches one. EOB is sampled at
+      // end_of_packet, so together with the condition above for end_of_packet
+      // this means that EOB will be asserted only at the end of the last packet
+      // in the burst. NOTE: We override this logic for an "inifinite burst"
+      // which is programmed as a burst_size of 0.
+      end_of_burst = (burst_count <= 1) && (burst_size != 0);
    end
 
    logic               ingress_beat;
@@ -116,7 +118,7 @@ module axis_stream_to_pkt_backpressured
 
    enum {
          S_NEW_BURST,
-         S_IN_BURST 
+         S_IN_BURST
          } burst_state;
 
    always_ff @(posedge clk)
@@ -149,18 +151,20 @@ module axis_stream_to_pkt_backpressured
           end // case: S_NEW_BURST
           //
           S_IN_BURST: begin
-             if (burst_size != 0) begin
-                // Allow for infinite burst.
-                burst_count <= burst_count - 1;
-             end
-             if (burst_count == 1) begin
-                // EOB
-                burst_state <= S_NEW_BURST;
-                burst_count <= burst_size;
-                // TODO: GO IDLE HERE IF NOT CHAINED.
-             end else begin
-                // Stay in active Burst state
-                burst_state <= S_IN_BURST;
+             if (ingress_beat) begin
+                if (burst_size != 0) begin
+                   // Allow for infinite burst.
+                   burst_count <= burst_count - 1;
+                end
+                if (burst_count == 1) begin
+                   // EOB
+                   burst_state <= S_NEW_BURST;
+                   burst_count <= burst_size;
+                   // TODO: GO IDLE HERE IF NOT CHAINED.
+                end else begin
+                   // Stay in active Burst state
+                   burst_state <= S_IN_BURST;
+                end
              end
           end // case: S_IN_BURST
         endcase // case (burst_state)
@@ -268,12 +272,12 @@ module axis_stream_to_pkt_backpressured
    always_comb begin
       input_count_plus_header = input_count+14'd4;
    end
-   
+
    // 64bits for time, 14 bits for size in 32b words, 1bit for EOB flag
    wire [(64+14+1-1):0]   tfifo_tdata;
    wire                   tfifo_tvalid;
    logic                  tfifo_tready;
-   
+
    axis_fifo
      #(
        .WIDTH(64+14+1),
@@ -366,7 +370,7 @@ module axis_stream_to_pkt_backpressured
 
    // Unused
    wire [1:0] space_sample_min, occupied_sample_min;
-   
+
    axis_minimal_fifo
      #(.WIDTH((IQ_WIDTH*4)+1))
    sample_fifo_minimal
@@ -394,15 +398,15 @@ module axis_stream_to_pkt_backpressured
    // Output State Machine
    //
    //-----------------------------------------------------------------------------
-   
+
    enum                      {
                               S_OUTPUT_HEADER,
                               S_OUTPUT_TIME,
                               S_OUTPUT_SAMPLES
                               }  output_state;
-   
+
    axis_t axis_pfifo(.clk(clk));
-   
+
    always_ff @(posedge clk) begin
       if (rst) begin
          output_state <= S_OUTPUT_HEADER;
@@ -464,6 +468,13 @@ module axis_stream_to_pkt_backpressured
        seq_id <= 0;
      else if (!enable)
        seq_id <= 0;
+     else if (output_state == S_OUTPUT_HEADER && tfifo_tdata[78]
+              && axis_pfifo.tvalid && axis_pfifo.tready)
+       // seq_id must be reset to zero at the beginning of each burst. Reset
+       // seq_id as soon as the packet_fifo consumes the header for the EOB
+       // packet. Since seq_id will still be incremented by one at the end of
+       // this packet, we reset it to all ones.
+       seq_id <= 8'hff;
      else if (axis_pfifo.tvalid && axis_pfifo.tready && axis_pfifo.tlast)
        seq_id <= seq_id + 1'b1;
 
@@ -541,7 +552,7 @@ module axis_stream_to_pkt_backpressured
    // Unused
    wire [PACKET_FIFO_SIZE:0] space_packet, occupied_packet;
 
-   
+
    axis_fifo_wrapper
      #(
        .SIZE(PACKET_FIFO_SIZE)
@@ -566,7 +577,7 @@ module axis_stream_to_pkt_backpressured
      if (rst) begin
         idle <= 1'b1;
      end else begin
-        idle <= (~axis_pkt.tvalid) && (~enable) && (~axis_pfifo.tvalid) 
+        idle <= (~axis_pkt.tvalid) && (~enable) && (~axis_pfifo.tvalid)
           && (~tfifo_tvalid) && (input_state == S_INPUT_IDLE) && (burst_state == S_NEW_BURST);
      end
 

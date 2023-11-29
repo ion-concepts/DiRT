@@ -240,12 +240,14 @@ endfunction : header_compare
 //-------------------------------------------------------------------------------
 function logic payload_compare(input pkt_payload_t a, input pkt_payload_t b);
     if (a.size() !== b.size()) begin
-        return (0);
+       $display("Packet payload size missmatch: %d vs %d",a.size(),b.size());
+       return (0);
     end
 
     for (integer i = 0; i < a.size(); i++ ) begin
         if (a[i] !== b[i]) begin
-            return (0);
+           $display("Payload Beat missmatch: %x vs %x",a[i],b[i]);
+           return (0);
         end
     end
     return(1);
@@ -538,12 +540,12 @@ class DRaTPacket;
         //test_header = test_packet.get_header();
         //test_payload
         if (use_assertion) begin
-            assert(header_compare(this.header,test_packet.get_header()));
-            assert(payload_compare(this.payload,test_packet.get_payload()));
-            return(1); // Should not get here if assert triggered
+           assert(header_compare(this.header,test_packet.get_header()));
+           assert(payload_compare(this.payload,test_packet.get_payload()));
+           return(1); // Should not get here if assert triggered
         end else begin
-            return(header_compare(this.header,test_packet.get_header()) &&
-                   payload_compare(this.payload,test_packet.get_payload()));
+           return(header_compare(this.header,test_packet.get_header()) &&
+                  payload_compare(this.payload,test_packet.get_payload()));
         end
     endfunction: is_same
 
