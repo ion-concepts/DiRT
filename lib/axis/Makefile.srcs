@@ -24,6 +24,8 @@ axis_minimal_fifo.sv \
 axis_minimal_fifo_wrapper.sv \
 axis_mm_to_pkt.sv \
 axis_mm_to_pkt_wrapper.sv \
+axis_mux2.sv \
+axis_mux2_wrapper.sv \
 axis_mux4.sv \
 axis_mux4_wrapper.sv \
 axis_mux8.sv \
