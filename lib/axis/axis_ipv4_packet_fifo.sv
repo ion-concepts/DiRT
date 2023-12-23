@@ -59,7 +59,6 @@ module axis_ipv4_packet_fifo
    logic [SIZE:0] space;
    logic [SIZE:0] occupied;
    logic [MAX_PACKETS-1:0] packet_count;
-   logic                   enable_ready;
 
 
    //---------------------------------------------------------
@@ -73,7 +72,7 @@ module axis_ipv4_packet_fifo
 
 
    //-------------------------------------------------------------------------------
-   // In DiRT, and IPv4 packet has the following alignment on 64b AXIS:
+   // In DiRT, an IPv4 packet has the following alignment on 64b AXIS:
    // Beat1: [64:32] (last octets of possible Eth header), [31:16] VERS+IHL+DSCP, [15:0] Length
    // Beat2: [64:32] Src IP Addr, [31:0] Dst IP addr
    //
@@ -81,13 +80,12 @@ module axis_ipv4_packet_fifo
      always_ff @(posedge clk)
        if(rst) begin
           state <= IDLE;
-          enable_ready <= 1'b0;
           csr_buffered_packets <= 0;
           csr_dropped_packets <= 0;
 
        end else begin
           case(state)
-            // Sit in IDLE state waiting for asserted TVALID that indicates first beat of an IPv$ packet.
+            // Sit in IDLE state waiting for asserted TVALID that indicates first beat of an IPv4 packet.
             IDLE: begin
                if (in_fifo_axis.tvalid) begin
                   // Is IPv4 packet size (in quad words) is smaller than remaining space in FIFO?
@@ -95,10 +93,8 @@ module axis_ipv4_packet_fifo
                   // hence not using >= )
                   if (in_fifo_axis.tdata[15:3] < space) begin
                      // Buffer packet
-                     enable_ready <= 1'b1;
                      state <= BUFFER;
                   end else begin
-                     enable_ready <= 1'b1;
                      state <= DROP;
                   end
                end // if (in_fifo_axis.tvalid)
@@ -110,10 +106,9 @@ module axis_ipv4_packet_fifo
             end
             // Sit in BUFFER adding burst beats to FIFO until TLAST is asserted
             BUFFER: begin
-               if (in_fifo_axis.tvalid && in_fifo_axis.tready && in_fifo_axis.tlast) begin
+               if (in_fifo_axis.tvalid && out_fifo_axis.tready && in_fifo_axis.tlast) begin
                   state <= IDLE;
                   csr_buffered_packets <= csr_buffered_packets + 1'b1;
-                  enable_ready <= 1'b0;
                end
                // Reset has higher precidence than counter increment
                if (csr_reset_stats) begin
@@ -123,10 +118,9 @@ module axis_ipv4_packet_fifo
             end
             // Sit in DROP discarding beats until TLAST is asserted
             DROP: begin
-               if (in_fifo_axis.tvalid && in_fifo_axis.tready && in_fifo_axis.tlast) begin
+               if (in_fifo_axis.tvalid && in_fifo_axis.tlast) begin
                   state <= IDLE;
                   csr_dropped_packets <= csr_dropped_packets + 1'b1;
-                  enable_ready <= 1'b0;
                end
                // Reset has higher precidence than counter increment
                if (csr_reset_stats) begin
@@ -142,10 +136,10 @@ module axis_ipv4_packet_fifo
    // 4 way combinatorial mux of the different valid/ready pairs from outputs.
    //
    always_comb begin
-      out_fifo_axis.tvalid = (state == BUFFER) && enable_ready && in_fifo_axis.tvalid;
+      out_fifo_axis.tvalid = (state == BUFFER) && in_fifo_axis.tvalid;
       in_fifo_axis.tready =
-                          ((state == BUFFER) && enable_ready && out_fifo_axis.tready) | // Buffer this packet
-                          ((state == DROP) && enable_ready); // Discard this packet
+                          ((state == BUFFER) && out_fifo_axis.tready) | // Buffer this packet
+                          ((state == DROP) ); // Discard this packet
       out_fifo_axis.tdata = in_fifo_axis.tdata;
       out_fifo_axis.tlast = in_fifo_axis.tlast;
 

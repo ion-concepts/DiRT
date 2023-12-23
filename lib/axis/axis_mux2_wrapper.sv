@@ -56,7 +56,7 @@ module axis_mux2_wrapper #(
         out_tready      = out_axis.tready;
     end
 
-    axis_mux4 #(
+    axis_mux2 #(
         .WIDTH(out_axis.WIDTH),
         .BUFFER(BUFFER),
         .PRIORITY(PRIORITY)
