@@ -571,16 +571,25 @@ class UDPPacket extends IPv4Packet;
 
    // Push entire UDP+IPv4 packet, without Ethernet headers, onto 8bit axis_t bus.
    // UDP payload must be 1 or greater in size.
-   task send_udp_to_octet_stream(virtual interface axis_t axis_bus, bit use_assertion=1);
+   task send_udp_to_octet_stream(virtual interface axis_t #(.WIDTH(8)) axis_bus, bit use_assertion=1);
       integer payload_len;
       logic [7:0] beat;
+      logic [159:0] tmp;
+      logic [7:0] tmp2;
+
+      // "Range must be bounded by constant expressions"
+      // Direct bit range select not aloowed so resort to right shift to select octets.
+      tmp = this.ipv4_header[159:0];
       // Serialize the IPv4 header to octets
       for (integer i=152; i >= 0 ; i=i-8) begin
-         axis_bus.write_beat(ipv4_header[i+7:i],0);
+         tmp2 = (tmp >> i) & 8'hff;
+         axis_bus.write_beat(tmp2,0);
       end
+      tmp = this.udp_header[63:0];
       // Serialize the UDP header to octets
       for (integer i=56; i >= 0 ; i=i-8) begin
-         axis_bus.write_beat(udp_header[i+7:i],0);
+         tmp2 = (tmp >> i) & 8'hff;
+         axis_bus.write_beat(tmp2,0);
       end
       // Serialize payload to octets
       payload_len = this.udp_header.length - 8;
