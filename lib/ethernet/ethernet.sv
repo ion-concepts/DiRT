@@ -569,6 +569,38 @@ class UDPPacket extends IPv4Packet;
       axis_bus.write_beat(beat,1);
     endtask // send_udp_to_ipv4_stream
 
+   // Push entire UDP+IPv4 packet, without Ethernet headers, onto 8bit axis_t bus.
+   // UDP payload must be 1 or greater in size.
+   task send_udp_to_octet_stream(virtual interface axis_t axis_bus, bit use_assertion=1);
+      integer payload_len;
+      logic [7:0] beat;
+      // Serialize the IPv4 header to octets
+      for (integer i=152; i >= 0 payload_len; i=i-8) begin
+         axis_bus.write_beat(ipv4_header[i+7:i],0);
+      end
+      // Serialize the UDP header to octets
+      for (integer i=56; i >= 0 payload_len; i=i-8) begin
+         axis_bus.write_beat(udp_header[i+7:i],0);
+      end
+      // Serialize payload to octets
+      payload_len = this.udp_header.length - 8;
+      if (use_assertion) begin
+         assert(payload_len==this.get_payload_length());
+      end else begin
+         if (payload_len!=this.get_payload_length())
+         $display("ERROR: UDP payload length missmatch. UDP header: %d,  Allocated %d", payload_len, this.get_payload_length());
+      end
+      this.rewind_payload();
+      // Iterate over payload
+      while (payload_len > 1) begin
+         axis_bus.write_beat(this.get_payload_octet(),0);
+         payload_len--;
+      end
+      axis_bus.write_beat(this.get_payload_octet(),1);
+    endtask // send_udp_to_octet_stream
+
+
+
 endclass : UDPPacket
 
 
