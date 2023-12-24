@@ -575,11 +575,11 @@ class UDPPacket extends IPv4Packet;
       integer payload_len;
       logic [7:0] beat;
       // Serialize the IPv4 header to octets
-      for (integer i=152; i >= 0 payload_len; i=i-8) begin
+      for (integer i=152; i >= 0 ; i=i-8) begin
          axis_bus.write_beat(ipv4_header[i+7:i],0);
       end
       // Serialize the UDP header to octets
-      for (integer i=56; i >= 0 payload_len; i=i-8) begin
+      for (integer i=56; i >= 0 ; i=i-8) begin
          axis_bus.write_beat(udp_header[i+7:i],0);
       end
       // Serialize payload to octets
