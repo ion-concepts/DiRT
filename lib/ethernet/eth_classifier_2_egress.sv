@@ -40,6 +40,7 @@ module eth_classifier_2_egress
    input logic [15:0] csr_udp1,
    input logic        csr_udp0_enable,
    input logic        csr_udp1_enable,
+   input logic        csr_l3_route_enable,
    input logic        csr_expose_drat,
    input logic        csr_enable //TODO
    );
@@ -130,27 +131,26 @@ module eth_classifier_2_egress
            //
            CLASSIFY_PACKET: begin
               // Make decision about where this packet is forwarded to.
-
-              if (is_eth_type_ipv4 && is_ipv4_proto_icmp) begin
-                 // IPV4 and ICMP. Only send to Egress0
-                 header_ram_addr <= 0;
-                 state <= FORWARD_0;
-              end else if (is_eth_broadcast || is_eth_multicast) begin
+              if (is_eth_broadcast || is_eth_multicast) begin
                  // MAC has broadcast addr or multicast bit set. Only send to Egress0
                  header_ram_addr <= 0;
                  state <= FORWARD_0;
-//              end else if (/*!is_eth_dst_addr*/0) begin
-                 // MAC dst is not our address. Discard packet.
-//                 header_ram_addr <= HEADER_RAM_SIZE - 1;
-//                 state <= DROP_PACKET;
-              end else if (is_eth_dst_addr && (is_udp_dst_ports[1] || is_udp_dst_ports[0])) begin
-                 // Has our MAC dst addr and has UDP port match.
+              end else if (is_eth_dst_addr && is_ipv4_dst_addr && (is_udp_dst_ports[1] || is_udp_dst_ports[0])) begin
+                 // Has our MAC dst addr, our IPv4 dst addr, and has UDP port match.
                  // Jump to DRaT header if enabled to strip lower protocols
                  // else strip headers back to ipv4 (with last16b of ethernet in MSBs)
                  header_ram_addr <= csr_expose_drat ? 6 : 2;
                  state <= FORWARD_1;
+              end else if (is_eth_dst_addr && ~is_ipv4_dst_addr && csr_l3_route_enable) begin
+                 // Packet for onward L3 routing
+                 // MAC DST matches but IPv4 DST addr doesn't match.
+                 // This should macth all IPv4 based protocols.
+                 // (Likely we would never strip back to DRaT for this match)
+                 header_ram_addr <= csr_expose_drat ? 6 : 2;
+                 state <= FORWARD_1;
               end else begin
-                 // Has our MAC dst addr but no UDP port match.
+                 // Let the default Egress0 deal with whatever did not yet match
+                 // as a full ethernet packet.
                  header_ram_addr <= 0;
                  state <= FORWARD_0;
               end
