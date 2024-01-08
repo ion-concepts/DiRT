@@ -52,6 +52,7 @@ module eth_classifier_2_egress
    logic       is_eth_broadcast;
    logic       is_eth_multicast;
    logic       is_eth_type_ipv4;
+   logic       is_eth_type_arp;
    logic       is_ipv4_dst_addr;
    logic       is_ipv4_proto_udp;
    logic       is_ipv4_proto_icmp;
@@ -131,8 +132,8 @@ module eth_classifier_2_egress
            //
            CLASSIFY_PACKET: begin
               // Make decision about where this packet is forwarded to.
-              if (is_eth_broadcast || is_eth_multicast) begin
-                 // MAC has broadcast addr or multicast bit set. Only send to Egress0
+              if (is_eth_broadcast || is_eth_multicast ||  is_eth_type_arp) begin
+                 // MAC has broadcast addr or multicast bit set, or it's an ARP packet. Only send to Egress0
                  header_ram_addr <= 0;
                  state <= FORWARD_0;
               end else if (is_eth_dst_addr && is_ipv4_dst_addr && (is_udp_dst_ports[1] || is_udp_dst_ports[0])) begin
@@ -141,10 +142,10 @@ module eth_classifier_2_egress
                  // else strip headers back to ipv4 (with last16b of ethernet in MSBs)
                  header_ram_addr <= csr_expose_drat ? 6 : 2;
                  state <= FORWARD_1;
-              end else if (is_eth_dst_addr && ~is_ipv4_dst_addr && csr_l3_route_enable) begin
+              end else if (is_eth_dst_addr && ~is_ipv4_dst_addr && is_eth_type_ipv4 && csr_l3_route_enable) begin
                  // Packet for onward L3 routing
                  // MAC DST matches but IPv4 DST addr doesn't match.
-                 // This should macth all IPv4 based protocols.
+                 // This should match all IPv4 based protocols.
                  // (Likely we would never strip back to DRaT for this match)
                  header_ram_addr <= csr_expose_drat ? 6 : 2;
                  state <= FORWARD_1;
@@ -223,6 +224,7 @@ module eth_classifier_2_egress
          is_eth_broadcast <= 1'b0;
          is_eth_multicast <= 1'b0;
          is_eth_type_ipv4 <= 1'b0;
+         is_eth_type_arp <= 1'b0;
          is_ipv4_dst_addr <= 1'b0;
          is_ipv4_proto_udp <=  1'b0;
          is_ipv4_proto_icmp <=  1'b0;
@@ -238,6 +240,7 @@ module eth_classifier_2_egress
               is_eth_broadcast <= 1'b0;
               is_eth_multicast <= 1'b0;
               is_eth_type_ipv4 <= 1'b0;
+              is_eth_type_arp <= 1'b0;
               is_ipv4_dst_addr <= 1'b0;
               is_ipv4_proto_udp <= 1'b0;
               is_ipv4_proto_icmp <= 1'b0;
@@ -273,6 +276,9 @@ module eth_classifier_2_egress
               // Look at Ethertype for IPv4 magic number
               if (in_tdata_reg[47:32] == 16'h0800)
                 is_eth_type_ipv4 <= 1'b1;
+              // Look at Ethertype for ARP magic number
+              if (in_tdata_reg[47:32] == 16'h0806)
+                is_eth_type_arp <= 1'b1;
            end
            4: begin
               // Look at protocol encapsulated by IPv4

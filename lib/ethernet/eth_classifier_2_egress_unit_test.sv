@@ -65,8 +65,8 @@ module eth_classifier_2_egress_unit_test;
    logic        csr_udp0_enable;
    logic        csr_udp1_enable;
 
-
    logic        csr_expose_drat;
+   logic        csr_l3_route_enable;
    logic        csr_enable;
    // Declarations for Stimulus Thread(s)
    logic        enable_stimulus;
@@ -124,6 +124,7 @@ module eth_classifier_2_egress_unit_test;
       .csr_udp1(csr_udp1),
       .csr_udp0_enable(csr_udp0_enable),
       .csr_udp1_enable(csr_udp1_enable),
+      .csr_l3_route_enable(csr_l3_route_enable),
       .csr_expose_drat(csr_expose_drat),
       .csr_enable(csr_enable)
       );
@@ -267,6 +268,8 @@ module eth_classifier_2_egress_unit_test;
       csr_udp1_enable <= 0;
 
       csr_expose_drat <= 1'b0;
+      csr_l3_route_enable <= 1'b0;
+      
       csr_enable <= 1'b0;
       // Open all valves by default
       enable_stimulus <= 1'b1;
@@ -328,7 +331,9 @@ module eth_classifier_2_egress_unit_test;
          csr_udp0_enable <= 1'b1;
          csr_udp1_enable <= 1'b1;
 
-         csr_expose_drat <= 1'b01;
+         csr_expose_drat <= 1'b1;
+         csr_l3_route_enable <= 1'b0;
+         
          @(negedge clk);
          csr_enable <= 1'b1;
 

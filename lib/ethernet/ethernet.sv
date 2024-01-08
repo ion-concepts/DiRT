@@ -55,6 +55,71 @@ package ethernet_protocol;
                   } eth_header_t; // 112bits
 
    //-------------------------------------------------------------------------------
+   //-- ARP header definition
+   //-------------------------------------------------------------------------------
+   typedef enum logic [15:0]
+                {
+                 ARP_HTYPE_RESERVED = 16'h00,
+                 ARP_HTYPE_ETHERNET = 16'h01
+                 } arp_htype_enum_t;
+
+   typedef union packed
+                 {
+                    arp_htype_enum_t arp_htype_enum;
+                    logic [15:0] arp_htype_raw;
+                 }  arp_htype_t;
+   
+
+   typedef union packed
+                 {
+                    ethertype_enum_t arp_ptype_enum; // Same as Ethertype
+                    logic [15:0] arp_ptype_raw;
+                 }  arp_ptype_t;
+   
+   typedef enum logic [15:0]
+                {
+                 ARP_OPER_RESERVED = 16'h00,
+                 ARP_OPER_REQUEST = 16'h01,
+                 ARP_OPER_REPLY = 16'h02,
+                 ARP_OPER_REQUEST_REVERSE = 16'h03,
+                 ARP_OPER_REPLY_REVERSE = 16'h04
+                 } arp_oper_enum_t;
+   
+   typedef union packed
+                 {
+                    arp_oper_enum_t arp_oper_enum;
+                    logic [15:0] arp_oper_raw;
+                 } arp_oper_t;
+
+   typedef struct packed
+                  {
+                     logic [7:0] octet_a;
+                     logic [7:0] octet_b;
+                     logic [7:0] octet_c;
+                     logic [7:0] octet_d;
+                  } arp_ha_octets_t;
+
+   typedef union packed
+                 {
+                    logic [31:0] pa_raw;
+                    arp_ha_octets_t pa_octets;
+                 } arp_pa_t;
+   
+   typedef struct packed
+                  {
+                     arp_htype_t htype;
+                     arp_ptype_t ptype;
+                     logic [7:0] hlen;
+                     logic [7:0] plen;
+                     arp_oper_t oper;
+                     logic [47:0] sha;
+                     arp_pa_t spa;
+                     logic [47:0] tha;
+                     arp_pa_t tpa;
+                  } arp_header_t; // 26 Octets
+   
+   
+   //-------------------------------------------------------------------------------
    //-- IPv4 header definition
    //-------------------------------------------------------------------------------
    typedef enum logic [7:0]
@@ -302,6 +367,88 @@ class EthernetPacket;
 
 endclass : EthernetPacket
 
+   //
+   // Generic ARP Packet type.
+   // Provides general packet manipulation and low level test functions.
+   // Inherits EthernetPacket as a base class.
+   //
+class ARPPacket extends EthernetPacket;
+  protected arp_header_t arp_header;
+
+   // Provide explicit constructor
+   // len: Size of ultimate payload in octets (NOT including any other encapsulated protocol headers)
+   function new(shortint len=26);
+      super.new(ARP,len);
+      arp_header.htype.arp_htype_enum = ARP_HTYPE_ETHERNET;
+      arp_header.ptype.arp_ptype_enum = IPV4;
+      arp_header.hlen = 8'd6;
+      arp_header.plen = 8'd4;
+      arp_header.oper.arp_oper_enum = ARP_OPER_RESERVED;
+      arp_header.sha = 48'h0;
+      arp_header.spa.pa_octets = {8'd0,8'd0,8'd0,8'd0};
+      arp_header.tha = 48'h0;
+      arp_header.tpa.pa_octets = {8'd0,8'd0,8'd0,8'd0};
+   endfunction // new
+
+   // Returns size of a ARP header in octets
+   // (Really size of full ARP payload)
+   function arp_header_size();
+      return('d26);
+   endfunction: arp_header_size
+
+   // Set ARP Operation (As an enumeration)
+   function void set_arp_oper(arp_oper_enum_t oper);
+     this.arp_header.oper.arp_oper_enum = oper;
+   endfunction: set_arp_oper
+
+   // Return ARP operation
+   function arp_oper_enum_t get_arp_oper();
+      return(this.arp_header.oper.arp_oper_enum);
+   endfunction: get_arp_oper
+
+   // Set SHA of ARP packet
+   function void set_arp_sha(logic[47:0] sha);
+      this.arp_header.sha = sha;
+   endfunction: set_arp_sha
+
+   // Returns SHA of ARP packet
+   function shortint get_arp_sha();
+      return(this.arp_header.sha);
+   endfunction : get_arp_sha
+
+   // Set SPA of ARP Packet
+   function void set_arp_spa(logic[31:0] spa);
+      this.arp_header.spa.pa_raw = spa;
+   endfunction: set_arp_spa
+
+   // Returns SPA of ARP Packet
+   function shortint get_arp_spa();
+      return(this.arp_header.spa.pa_raw);
+   endfunction : get_arp_spa
+
+   // Set THA of ARP packet
+   function void set_arp_tha(logic[47:0] tha);
+      this.arp_header.tha = tha;
+   endfunction: set_arp_tha
+
+   // Returns THA of ARP packet
+   function shortint get_arp_tha();
+      return(this.arp_header.tha);
+   endfunction : get_arp_tha
+
+   // Set TPA of ARP Packet
+   function void set_arp_tpa(logic[31:0] tpa);
+      this.arp_header.tpa.pa_raw = tpa;
+   endfunction: set_arp_tpa
+
+   // Returns TPA of ARP Packet
+   function shortint get_arp_tpa();
+      return(this.arp_header.tpa.pa_raw);
+   endfunction : get_arp_tpa
+   
+endclass : ARPPacket
+   
+   
    //
    // Generic IPv4 Packet type.
    // Provides general packet manipulation and low level test functions.
