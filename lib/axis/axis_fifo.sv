@@ -28,7 +28,8 @@ module axis_fifo
   #(
     parameter WIDTH=32, 
     parameter SIZE=5, // 2^SIZE
-    parameter VENDOR="xilinx"
+    parameter VENDOR="xilinx",
+    parameter ULTRA=0
     )
    (
     input logic 	     clk, 
@@ -77,7 +78,7 @@ module axis_fifo
 	    else
 	      begin
 		 // Uses Xilinx BRAM
-		 axis_fifo_xilinx_bram #(.WIDTH(WIDTH), .SIZE(SIZE)) fifo_bram
+		 axis_fifo_xilinx_bram #(.WIDTH(WIDTH), .SIZE(SIZE), .ULTRA(ULTRA)) fifo_bram
 		   (.clk(clk), .rst(rst),
 		    .in_tdata(in_tdata), .in_tvalid(in_tvalid), .in_tready(in_tready),
 		    .out_tdata(out_tdata), .out_tvalid(out_tvalid), .out_tready(out_tready),

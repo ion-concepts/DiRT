@@ -17,7 +17,8 @@
 module axis_fifo_xilinx_bram
   #(
     parameter WIDTH=32, 
-    parameter SIZE=9
+    parameter SIZE=9,
+    parameter ULTRA=0
     )
    (
     input logic 	     clk, 
@@ -65,7 +66,7 @@ module axis_fifo_xilinx_bram
      wr_addr <= wr_addr + 1;
 
    // Use infered RAM rather than tech specific library cell for now.
-   ram_dual_port_2clk #(.WIDTH(WIDTH),.SIZE(SIZE)) ram 
+   ram_dual_port_2clk #(.WIDTH(WIDTH),.SIZE(SIZE),.ULTRA(ULTRA)) ram 
      (
       .clk1(clk),
       .enable1(1'b1),

@@ -25,7 +25,8 @@ module axis_packet_fifo
     parameter WIDTH=64,  // AXIS datapath width.
     parameter SIZE=9,    // Size of FIFO (LOG2)
     parameter MAX_PACKETS=8, // Sets number of packets that can be in FIFO concurrently (LOG2)
-    parameter VENDOR="xilinx"
+    parameter VENDOR="xilinx",
+    parameter ULTRA=0
     )
 
 
@@ -93,7 +94,8 @@ module axis_packet_fifo
      #(
        .WIDTH(WIDTH+1),
        .SIZE(SIZE),
-       .VENDOR(VENDOR)
+       .VENDOR(VENDOR),
+       .ULTRA(ULTRA)
        )
    axis_fifo_i0
      (

@@ -23,7 +23,8 @@
 module axis_packet_fifo_wrapper #(
         parameter SIZE=9,        // Size of FIFO (LOG2)
         parameter MAX_PACKETS=8, // Sets number of packets that can be in FIFO concurrently (LOG2)
-        parameter VENDOR="xilinx" // "xilinx" is currently only support vendor.
+        parameter VENDOR="xilinx", // "xilinx" is currently only support vendor.
+        parameter ULTRA=0 // Set to 1 to try to force implication of UltraRAM
     ) (
         input logic clk,
         input logic rst,
@@ -63,10 +64,12 @@ module axis_packet_fifo_wrapper #(
     end
 
     axis_packet_fifo #(
-        .WIDTH(in_axis.WIDTH),
-        .SIZE(SIZE),
-        .MAX_PACKETS(MAX_PACKETS),
-        .VENDOR(VENDOR)
+                       .WIDTH(in_axis.WIDTH),
+                       .SIZE(SIZE),
+                       .MAX_PACKETS(MAX_PACKETS),
+                       .VENDOR(VENDOR),
+                       .ULTRA(ULTRA)
+          
     ) core (
         .clk(clk),
         .rst(rst),
