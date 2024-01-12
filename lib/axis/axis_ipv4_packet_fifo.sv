@@ -59,7 +59,6 @@ module axis_ipv4_packet_fifo
    // Occupancy
    logic [SIZE:0] space;
    logic [SIZE:0] occupied;
-   logic [MAX_PACKETS-1:0] packet_count;
 
 
    //---------------------------------------------------------
@@ -160,7 +159,7 @@ module axis_ipv4_packet_fifo
       );
 
    //-------------------------------------------------------------------------------
-   // FIFO holds (potentially many) IPv4 packets
+   // FIFO(s) holds (potentially many) IPv4 packets
    //-------------------------------------------------------------------------------
    axis_packet_fifo_wrapper
      #(
@@ -177,8 +176,9 @@ module axis_ipv4_packet_fifo
       .out_axis(out_axis),
       .space(space),
       .occupied(occupied),
-      .packet_count(packet_count)
+      .packet_count()
       );
+
 
 
 endmodule

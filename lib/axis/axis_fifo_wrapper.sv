@@ -15,7 +15,8 @@
 //-------------------------------------------------------------------------------
 module axis_fifo_wrapper #(
         parameter SIZE=5, // 2^SIZE
-        parameter VENDOR="xilinx"
+        parameter VENDOR="xilinx",
+        parameter ULTRA=0
     ) (
         input wire               clk,
         input wire               rst,
@@ -51,7 +52,8 @@ module axis_fifo_wrapper #(
     axis_fifo #(
         .WIDTH(in_axis.WIDTH + 1),
         .SIZE(SIZE),
-        .VENDOR(VENDOR)
+        .VENDOR(VENDOR),
+        .ULTRA(ULTRA)
     ) axis_fifo_i0 (
         .clk(clk),
         .rst(rst),
