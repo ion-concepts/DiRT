@@ -121,8 +121,8 @@ typedef enum logic [15:0]
 // Define a source / dest pairing of addresses to define a flow.
 typedef struct packed
                {
-                  node_src_addr_t flow_src;
-                  node_dst_addr_t flow_dst;
+                  logic [15:0] flow_src;
+                  logic [15:0] flow_dst;
                } flow_addr_t;
 
 // flow_id can be thought of as a unique identifier for the flow
@@ -262,7 +262,7 @@ function void print_header(input pkt_header_t header);
    $display("Type:   %s", header.packet_type.name);
    $display("SeqID:  %0d", header.seq_id);
    $display("Length: %0d", header.length);
-   $display("FlowID: %s -> %s", header.flow_id.flow_addr.flow_src.name,header.flow_id.flow_addr.flow_dst.name);
+   $display("FlowID: %0d -> %0d", header.flow_id.flow_addr.flow_src,header.flow_id.flow_addr.flow_dst);
    $display("Time:   %0d", header.timestamp);
 endfunction : print_header
 

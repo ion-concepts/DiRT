@@ -324,6 +324,7 @@ interface axis_slave_t
 
 
 endinterface : axis_slave_t
+
 //---------------------------------------------------------------------------------
 
 
@@ -377,6 +378,9 @@ interface axis_master_t
 
 endinterface : axis_master_t
 
+//---------------------------------------------------------------------------------
+
+
 interface axis_broadcast_t
   #(parameter WIDTH = 64)
    (input clk);
@@ -385,6 +389,44 @@ interface axis_broadcast_t
    logic [WIDTH-1:0]  tdata;
    logic              tvalid;
    logic              tlast;
+
+   // AXIS Broadcast is point-to-many with no backpressure.
+   // declare modport for master and slave interfaces.
+
+   modport master (output tdata, output tvalid, output tlast);
+   modport slave (input tdata, input tvalid, input tlast);
+   modport monitor (input tdata, input tvalid, input tlast);
+
+   //
+   // Write active bus beat.
+   //
+   task automatic write_beat;
+      input logic [WIDTH-1:0] data; // Contents of tdata for this beat.
+      input logic             last; // Assert tlast for this beat.
+
+      begin
+         tdata = data;
+         tvalid = 1'b1;
+         tlast = last;
+         // After accepting clock edge, de-assert valid.
+         @(posedge clk) #1 tvalid = 1'b0;
+      end
+   endtask // insertbeat
+
+   //
+   // Insert 1 idle master clock cycle.
+   //
+   task automatic idle_master;
+      begin
+         tdata = 'h0;
+         tvalid = 1'b0;
+         tlast = 1'b0;
+         // One idle clock cycle
+         @(posedge clk);
+         #1;
+
+      end
+   endtask // idle_master
 
 endinterface : axis_broadcast_t
 
