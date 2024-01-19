@@ -59,6 +59,7 @@ module axis_fifo
 		 axis_minimal_fifo #(.WIDTH(WIDTH)) axis_minimal_fifo_i0
 		   (.clk(clk), .rst(rst),
 		    .in_tdata(in_tdata), .in_tvalid(in_tvalid), .in_tready(in_tready),
+                    .out_tdata(out_tdata), .out_tvalid(out_tvalid), .out_tready(out_tready),
 		    .space(space), .occupied(occupied));
 	      end
 	    else if(SIZE<=5)

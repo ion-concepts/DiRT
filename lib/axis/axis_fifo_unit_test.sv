@@ -16,26 +16,34 @@
 `include "axis_fifo_wrapper.sv"
 
 module axis_fifo_unit_test;
-  timeunit 1ns; 
-  timeprecision 1ps;
-  import svunit_pkg::svunit_testcase;
+   timeunit 1ns;
+   timeprecision 1ps;
+   import svunit_pkg::svunit_testcase;
 
-  string name = "axis_fifo_ut";
-  svunit_testcase svunit_ut;
+   string name = "axis_fifo_ut";
+   svunit_testcase svunit_ut;
 
    localparam SIZE=10;
-   
-   logic clk;
-   logic rst;
-   
+
+   logic      clk;
+   logic      rst;
+
+   // BRAM Based
    axis_t in0(.clk(clk));
    axis_t out0(.clk(clk));
-   
+   // SRL32 based
+   axis_t in1(.clk(clk));
+   axis_t out1(.clk(clk));
+   // Register Based
+   axis_t in2(.clk(clk));
+   axis_t out2(.clk(clk));
+
+
 
    logic [63:0] test_tdata;
-   logic 	test_tlast;
+   logic        test_tlast;
    wire [SIZE:0] space,occupied;
-   int 	       timeout;
+   int           timeout;
 
    //
    // Generate clk
@@ -47,16 +55,17 @@ module axis_fifo_unit_test;
    always
      #5 clk <= ~clk;
 
-  //===================================
-  // This is the UUT that we're 
-  // running the Unit Tests on
-  //===================================
+   //===================================
+   // This is the UUT that we're
+   // running the Unit Tests on
+   //===================================
 
-  axis_fifo_wrapper
-    #(
-      .SIZE(SIZE)
-      )
-   my_axis_fifo
+   // BRAM
+   axis_fifo_wrapper
+     #(
+       .SIZE(SIZE)
+       )
+   axis_fifo_bram
      (
       //-- Clock/Reset
       .clk(clk),
@@ -70,64 +79,102 @@ module axis_fifo_unit_test;
       .occupied(occupied)
       );
 
-  //===================================
-  // Build
-  //===================================
-  function void build();
-    svunit_ut = new(name);
-  endfunction
+   // SRL32
+   axis_fifo_wrapper
+     #(
+       .SIZE(5)
+       )
+   axis_fifo_srl32
+     (
+      //-- Clock/Reset
+      .clk(clk),
+      .rst(rst),
+      // -- Input AXI Stream
+      .in_axis(in1),
+      //-- Output AXI Stream
+      .out_axis(out1),
+      //-- Current fullness of FIFO
+      .space(),
+      .occupied()
+      );
 
+   // Register
+   axis_fifo_wrapper
+     #(
+       .SIZE(2)
+       )
+   axis_fifo_register
+     (
+      //-- Clock/Reset
+      .clk(clk),
+      .rst(rst),
+      // -- Input AXI Stream
+      .in_axis(in2),
+      //-- Output AXI Stream
+      .out_axis(out2),
+      //-- Current fullness of FIFO
+      .space(),
+      .occupied()
+      );
 
-  //===================================
-  // Setup for running the Unit Tests
-  //===================================
-  task setup();
-     svunit_ut.setup();
-     /* Place Setup Code Here */
-     // Reset UUT
-     @(posedge clk);
-     rst <= 1'b1;
-     repeat(10) @(posedge clk);
-     rst <= 1'b0;
-     idle_all();
-  endtask
-
-
-  //===================================
-  // Here we deconstruct anything we 
-  // need after running the Unit Tests
-  //===================================
-  task teardown();
-    svunit_ut.teardown();
-    /* Place Teardown Code Here */
-  endtask
-
-
-  //===================================
-  // All tests are defined between the
-  // SVUNIT_TESTS_BEGIN/END macros
-  //
-  // Each individual test must be
-  // defined between `SVTEST(_NAME_)
-  // `SVTEST_END
-  //
-  // i.e.
-  //   `SVTEST(mytest)
-  //     <test code>
-  //   `SVTEST_END
-  //===================================
-  `SVUNIT_TESTS_BEGIN
-
- 
    //===================================
-   // Test:
-   //
-   // pass_data
-   //
-   // Feed packets to fifo
-   // Check all emerge in order and unaltered.
+   // Build
    //===================================
-   `SVTEST(pass_data)
+   function void build();
+      svunit_ut = new(name);
+   endfunction
+
+
+   //===================================
+   // Setup for running the Unit Tests
+   //===================================
+   task setup();
+      svunit_ut.setup();
+      /* Place Setup Code Here */
+      // Reset UUT
+      @(posedge clk);
+      rst <= 1'b1;
+      repeat(10) @(posedge clk);
+      rst <= 1'b0;
+      idle_all();
+   endtask
+
+
+   //===================================
+   // Here we deconstruct anything we
+   // need after running the Unit Tests
+   //===================================
+   task teardown();
+      svunit_ut.teardown();
+      /* Place Teardown Code Here */
+   endtask
+
+
+   //===================================
+   // All tests are defined between the
+   // SVUNIT_TESTS_BEGIN/END macros
+   //
+   // Each individual test must be
+   // defined between `SVTEST(_NAME_)
+   // `SVTEST_END
+   //
+   // i.e.
+   //   `SVTEST(mytest)
+   //     <test code>
+   //   `SVTEST_END
+   //===================================
+   `SVUNIT_TESTS_BEGIN
+
+
+     //===================================
+     // Test:
+     //
+     // pass_data_bram
+     //
+     // Feed packets to BRAM fifo
+     // Check all emerge in order and unaltered.
+     //===================================
+     `SVTEST(pass_data_bram)
    idle_all();
    fork
       begin : master_thread
@@ -141,7 +188,7 @@ module axis_fifo_unit_test;
 	 in0.write_beat(64'h1111_ffff_1111_ffff,1'b0);
 	 in0.write_beat(64'h1111_1111_1111_1111,1'b0);
 	 in0.write_beat(64'hffff_ffff_ffff_ffff,1'b1);
-	 
+
       end
       begin : slave_thread
 	 // PKT1
@@ -173,21 +220,153 @@ module axis_fifo_unit_test;
 	 disable watchdog_thread;
       end // block: slave_thread
       begin : watchdog_thread
-	 timeout = 10000;	 
+	 timeout = 10000;
 	 while(1) begin
 	    `FAIL_IF(timeout==0);
 	    timeout = timeout - 1;
-	    @(negedge clk);	    
-	 end	
-      end    
+	    @(negedge clk);
+	 end
+      end
    join
    `SVTEST_END
 
-   `SVUNIT_TESTS_END
- 
-    task idle_all();
-       in0.idle_master();
-       out0.idle_slave();
-    endtask // idle_all
-   
+     //===================================
+     // Test:
+     //
+     // pass_data_srl32
+     //
+     // Feed packets to SRL32 fifo
+     // Check all emerge in order and unaltered.
+     //===================================
+     `SVTEST(pass_data_srl32)
+   idle_all();
+   fork
+      begin : master_thread
+	 // PKT1
+	 in1.write_beat(64'hffff_0000_ffff_0000,1'b0);
+	 in1.write_beat(64'h0000_ffff_0000_ffff,1'b0);
+	 in1.write_beat(64'h0000_0000_0000_0000,1'b0);
+	 in1.write_beat(64'hffff_ffff_ffff_ffff,1'b1);
+	 // PKT2
+	 in1.write_beat(64'hffff_1111_ffff_1111,1'b0);
+	 in1.write_beat(64'h1111_ffff_1111_ffff,1'b0);
+	 in1.write_beat(64'h1111_1111_1111_1111,1'b0);
+	 in1.write_beat(64'hffff_ffff_ffff_ffff,1'b1);
+
+      end
+      begin : slave_thread
+	 // PKT1
+	 out1.read_beat(test_tdata,test_tlast);
+	 `FAIL_UNLESS(test_tdata === 64'hffff_0000_ffff_0000);
+	 `FAIL_UNLESS(test_tlast === 1'b0);
+	 out1.read_beat(test_tdata,test_tlast);
+	 `FAIL_UNLESS(test_tdata === 64'h0000_ffff_0000_ffff);
+	 `FAIL_UNLESS(test_tlast === 1'b0);
+	 out1.read_beat(test_tdata,test_tlast);
+	 `FAIL_UNLESS(test_tdata === 64'h0000_0000_0000_0000);
+	 `FAIL_UNLESS(test_tlast === 1'b0);
+	 out1.read_beat(test_tdata,test_tlast);
+	 `FAIL_UNLESS(test_tdata === 64'hffff_ffff_ffff_ffff);
+	 `FAIL_UNLESS(test_tlast === 1'b1);
+	 // PKT2
+	 out1.read_beat(test_tdata,test_tlast);
+	 `FAIL_UNLESS(test_tdata === 64'hffff_1111_ffff_1111);
+	 `FAIL_UNLESS(test_tlast === 1'b0);
+	 out1.read_beat(test_tdata,test_tlast);
+	 `FAIL_UNLESS(test_tdata === 64'h1111_ffff_1111_ffff);
+	 `FAIL_UNLESS(test_tlast === 1'b0);
+	 out1.read_beat(test_tdata,test_tlast);
+	 `FAIL_UNLESS(test_tdata === 64'h1111_1111_1111_1111);
+	 `FAIL_UNLESS(test_tlast === 1'b0);
+	 out1.read_beat(test_tdata,test_tlast);
+	 `FAIL_UNLESS(test_tdata === 64'hffff_ffff_ffff_ffff);
+	 `FAIL_UNLESS(test_tlast === 1'b1);
+	 disable watchdog_thread;
+      end // block: slave_thread
+      begin : watchdog_thread
+	 timeout = 10000;
+	 while(1) begin
+	    `FAIL_IF(timeout==0);
+	    timeout = timeout - 1;
+	    @(negedge clk);
+	 end
+      end
+   join
+   `SVTEST_END
+
+     //===================================
+     // Test:
+     //
+     // pass_data_register
+     //
+     // Feed packets to register fifo
+     // Check all emerge in order and unaltered.
+     //===================================
+     `SVTEST(pass_data_register)
+   idle_all();
+   fork
+      begin : master_thread
+	 // PKT1
+	 in2.write_beat(64'hffff_0000_ffff_0000,1'b0);
+	 in2.write_beat(64'h0000_ffff_0000_ffff,1'b0);
+	 in2.write_beat(64'h0000_0000_0000_0000,1'b0);
+	 in2.write_beat(64'hffff_ffff_ffff_ffff,1'b1);
+	 // PKT2
+	 in2.write_beat(64'hffff_1111_ffff_1111,1'b0);
+	 in2.write_beat(64'h1111_ffff_1111_ffff,1'b0);
+	 in2.write_beat(64'h1111_1111_1111_1111,1'b0);
+	 in2.write_beat(64'hffff_ffff_ffff_ffff,1'b1);
+
+      end
+      begin : slave_thread
+	 // PKT1
+	 out2.read_beat(test_tdata,test_tlast);
+	 `FAIL_UNLESS(test_tdata === 64'hffff_0000_ffff_0000);
+	 `FAIL_UNLESS(test_tlast === 1'b0);
+	 out2.read_beat(test_tdata,test_tlast);
+	 `FAIL_UNLESS(test_tdata === 64'h0000_ffff_0000_ffff);
+	 `FAIL_UNLESS(test_tlast === 1'b0);
+	 out2.read_beat(test_tdata,test_tlast);
+	 `FAIL_UNLESS(test_tdata === 64'h0000_0000_0000_0000);
+	 `FAIL_UNLESS(test_tlast === 1'b0);
+	 out2.read_beat(test_tdata,test_tlast);
+	 `FAIL_UNLESS(test_tdata === 64'hffff_ffff_ffff_ffff);
+	 `FAIL_UNLESS(test_tlast === 1'b1);
+	 // PKT2
+	 out2.read_beat(test_tdata,test_tlast);
+	 `FAIL_UNLESS(test_tdata === 64'hffff_1111_ffff_1111);
+	 `FAIL_UNLESS(test_tlast === 1'b0);
+	 out2.read_beat(test_tdata,test_tlast);
+	 `FAIL_UNLESS(test_tdata === 64'h1111_ffff_1111_ffff);
+	 `FAIL_UNLESS(test_tlast === 1'b0);
+	 out2.read_beat(test_tdata,test_tlast);
+	 `FAIL_UNLESS(test_tdata === 64'h1111_1111_1111_1111);
+	 `FAIL_UNLESS(test_tlast === 1'b0);
+	 out2.read_beat(test_tdata,test_tlast);
+	 `FAIL_UNLESS(test_tdata === 64'hffff_ffff_ffff_ffff);
+	 `FAIL_UNLESS(test_tlast === 1'b1);
+	 disable watchdog_thread;
+      end // block: slave_thread
+      begin : watchdog_thread
+	 timeout = 10000;
+	 while(1) begin
+	    `FAIL_IF(timeout==0);
+	    timeout = timeout - 1;
+	    @(negedge clk);
+	 end
+      end
+   join
+   `SVTEST_END
+
+     `SVUNIT_TESTS_END
+
+       task idle_all();
+          in0.idle_master();
+          out0.idle_slave();
+          in1.idle_master();
+          out1.idle_slave();
+          in2.idle_master();
+          out2.idle_slave();
+       endtask // idle_all
+
 endmodule
