@@ -57,7 +57,7 @@ module axis_minimal_fifo
         data_reg1 <= 0;
         data_reg2 <= 0;
         out_tvalid <= 1'b0;
-        in_tready <= 1'b0;
+        in_tready <= 1'b1;
 	space <= 2'h2;
 	occupied <= 2'h0;
      end else begin
