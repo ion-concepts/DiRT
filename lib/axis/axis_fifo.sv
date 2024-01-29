@@ -64,9 +64,9 @@ module axis_fifo
 		    .in_tdata(in_tdata), .in_tvalid(in_tvalid), .in_tready(in_tready),
                     .out_tdata(out_tdata), .out_tvalid(out_tvalid), .out_tready(out_tready),
 		    .space(min_space), .occupied(min_occupied));
-	      end // if (SIZE<=2)
-            assign space = min_space[SIZE:0];
-	    assign occupied = min_occupied[SIZE:0];
+                 assign space = min_space[SIZE:0];
+	         assign occupied = min_occupied[SIZE:0];
+              end // if (SIZE<=2)
 	    else if(SIZE<=5)
 	      begin
 		 logic [5:0] srl32_space;
