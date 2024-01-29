@@ -55,13 +55,18 @@ module axis_fifo
 	      end
 	    else if(SIZE<=2)
 	      begin
+                 logic [1:0] min_space;
+                 logic [1:0] min_occupied;
+
 		 // Uses flip-flops from SLICEL or SLICEM
 		 axis_minimal_fifo #(.WIDTH(WIDTH)) axis_minimal_fifo_i0
 		   (.clk(clk), .rst(rst),
 		    .in_tdata(in_tdata), .in_tvalid(in_tvalid), .in_tready(in_tready),
                     .out_tdata(out_tdata), .out_tvalid(out_tvalid), .out_tready(out_tready),
-		    .space(space), .occupied(occupied));
-	      end
+		    .space(min_space), .occupied(min_occupied));
+	      end // if (SIZE<=2)
+            assign space = min_space[SIZE:0];
+	    assign occupied = min_occupied[SIZE:0];
 	    else if(SIZE<=5)
 	      begin
 		 logic [5:0] srl32_space;
