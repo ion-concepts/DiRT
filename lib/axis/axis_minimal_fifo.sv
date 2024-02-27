@@ -13,6 +13,7 @@
 // License: CERN-OHL-P (See LICENSE.md)
 //
 //-------------------------------------------------------------------------------
+`default_nettype none
 `include "global_defs.svh"
 
 module axis_minimal_fifo
@@ -21,31 +22,30 @@ module axis_minimal_fifo
     )
 
    (
-    input logic 	     clk,
-    input logic 	     rst,
+    input wire               clk,
+    input wire               rst,
     //
     // Input Bus
     //
-    input logic [WIDTH-1:0]  in_tdata,
-    input logic 	     in_tvalid,
-    output reg 		     in_tready,
+    input wire [WIDTH-1:0]   in_tdata,
+    input wire               in_tvalid,
+    output logic             in_tready,
     //
     // Output Bus
     //
     output logic [WIDTH-1:0] out_tdata,
-    output reg 		     out_tvalid,
-    input logic 	     out_tready,
+    output logic             out_tvalid,
+    input wire               out_tready,
     //
     // Occupancy
     //
-    output reg [1:0] 	     space,
-    output reg [1:0] 	     occupied
-
+    output logic [1:0]       space,
+    output logic [1:0]       occupied
     );
 
-   reg [WIDTH-1:0]     data_reg1, data_reg2;
+   logic [WIDTH-1:0]         data_reg1, data_reg2;
 
-   reg [1:0]             state;
+   logic [1:0]               state;
 
    localparam EMPTY = 0;
    localparam HALF = 1;
@@ -54,8 +54,6 @@ module axis_minimal_fifo
    always_ff @(posedge clk)
      if (rst) begin
         state <= EMPTY;
-        data_reg1 <= 0;
-        data_reg2 <= 0;
         out_tvalid <= 1'b0;
         in_tready <= 1'b1;
 	space <= 2'h2;
@@ -67,7 +65,6 @@ module axis_minimal_fifo
           // Downstream has nothing to take from us.
           EMPTY: begin
              if (in_tvalid) begin
-                data_reg1 <= in_tdata;
                 state <= HALF;
                 in_tready <= 1'b1;
                 out_tvalid <= 1'b1;
@@ -86,15 +83,12 @@ module axis_minimal_fifo
           // Downstream can always read from us.
           HALF: begin
              if (in_tvalid && out_tready) begin
-                data_reg1 <= in_tdata;
                 state <= HALF;
                 in_tready <= 1'b1;
                 out_tvalid <= 1'b1;
 		space <= 2'h1;
 		occupied <= 2'h1;
              end else if (in_tvalid) begin
-                data_reg1 <= in_tdata;
-                data_reg2 <= data_reg1;
                 state <= FULL;
                 in_tready <= 1'b0;
                 out_tvalid <= 1'b1;
@@ -134,9 +128,30 @@ module axis_minimal_fifo
              end
           end
         endcase // case(state)
-     end // else: !if(rst
+     end // else: !if(rst)
 
-   assign out_tdata = (state == FULL) ? data_reg2 : data_reg1;
+   always_ff @(posedge clk) begin
+      case (state)
+        EMPTY: begin
+            if (in_tvalid) begin
+               data_reg1 <= in_tdata;
+            end
+        end
+        HALF: begin
+           if (in_tvalid && out_tready) begin
+              data_reg1 <= in_tdata;
+           end else if (in_tvalid) begin
+              data_reg1 <= in_tdata;
+              data_reg2 <= data_reg1;
+           end
+        end
+      endcase
+   end
 
+   always_comb begin
+      out_tdata = (state == FULL) ? data_reg2 : data_reg1;
+   end
 
 endmodule // axis_minimal_fifo
+
+`default_nettype wire
