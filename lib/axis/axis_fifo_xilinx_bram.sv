@@ -8,7 +8,7 @@
 // * Size (Depth) of FIFO
 //
 // Description:
-// 
+//
 //  License: CERN-OHL-P (See LICENSE.md)
 //
 //-------------------------------------------------------------------------------
@@ -16,12 +16,12 @@
 
 module axis_fifo_xilinx_bram
   #(
-    parameter WIDTH=32, 
+    parameter WIDTH=32,
     parameter SIZE=9,
     parameter ULTRA=0
     )
    (
-    input logic 	     clk, 
+    input logic 	     clk,
     input logic 	     rst,
     // Input Bus
     input logic [WIDTH-1:0]  in_tdata,
@@ -38,27 +38,27 @@ module axis_fifo_xilinx_bram
 
 
    logic 			     write;
-   logic 			     read; 
-   
+   logic 			     read;
+
    //
    // Read state machine
    //
-   reg [1:0] 		     read_state;
+   logic [1:0]                       read_state;
    localparam 	  EMPTY = 0;
    localparam 	  PRE_READ = 1;
    localparam 	  READING = 2;
 
-   reg [SIZE-1:0] 	     wr_addr;
-   reg [SIZE-1:0] 	     rd_addr;
+   logic [SIZE-1:0] wr_addr;
+   logic [SIZE-1:0] rd_addr;
 
-   reg 			     empty;
-   reg 			     full;
-   
+   logic            empty;
+   logic            full;
+
    assign  write 	     = in_tvalid & in_tready;
    assign  read 	     = out_tvalid & out_tready;
    assign in_tready  = ~full;
    assign out_tvalid  = ~empty;
-   
+
    always_ff @(posedge clk)
      if (rst)
        wr_addr <= 0;
@@ -66,7 +66,7 @@ module axis_fifo_xilinx_bram
      wr_addr <= wr_addr + 1;
 
    // Use infered RAM rather than tech specific library cell for now.
-   ram_dual_port_2clk #(.WIDTH(WIDTH),.SIZE(SIZE),.ULTRA(ULTRA)) ram 
+   ram_dual_port_2clk #(.WIDTH(WIDTH),.SIZE(SIZE),.ULTRA(ULTRA)) ram
      (
       .clk1(clk),
       .enable1(1'b1),
@@ -103,12 +103,12 @@ module axis_fifo_xilinx_bram
 	      empty <= 0;
 	      rd_addr <= rd_addr + 1;
 	   end
-	 
+
 	 READING :
 	   if(read)
 	     if(rd_addr == wr_addr)
 	       begin
-		  empty <= 1; 
+		  empty <= 1;
 		  if(write)
 		    read_state <= PRE_READ;
 		  else
@@ -118,9 +118,14 @@ module axis_fifo_xilinx_bram
 	       rd_addr <= rd_addr + 1;
        endcase // case(read_state)
 
-   logic [SIZE-1:0] dont_write_past_me = rd_addr - 2;
-   logic 	    becoming_full = wr_addr == dont_write_past_me;
-   
+   logic [SIZE-1:0] dont_write_past_me;
+   logic 	    becoming_full;
+
+   always_comb begin
+      dont_write_past_me = rd_addr - 2;
+      becoming_full = wr_addr == dont_write_past_me;
+   end
+
    always_ff @(posedge clk)
      if(rst)
        full <= 0;
@@ -137,7 +142,7 @@ module axis_fifo_xilinx_bram
        space <= space + 1'b1;
      else if(write & ~read)
        space <= space - 1'b1;
-   
+
    always_ff @(posedge clk)
      if(rst)
        occupied <= 16'b0;
