@@ -179,10 +179,10 @@ module axis_flow_control_time
 
    always_comb begin
       unique case(state)
-        S_HEAD_IN: axis_fifo.tready <= 1'b1;
-        S_TIME_IN: axis_fifo.tready <= 1'b1;
-        S_PAYLOAD: axis_fifo.tready <= 1'b1;
-        default: axis_fifo.tready <= 1'b0;
+        S_HEAD_IN: axis_fifo.tready = 1'b1;
+        S_TIME_IN: axis_fifo.tready = 1'b1;
+        S_PAYLOAD: axis_fifo.tready = axis_out.tready;
+        default: axis_fifo.tready = 1'b0;
       endcase // unique case (state)
    end
 
