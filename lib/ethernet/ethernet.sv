@@ -68,14 +68,14 @@ package ethernet_protocol;
                     arp_htype_enum_t arp_htype_enum;
                     logic [15:0] arp_htype_raw;
                  }  arp_htype_t;
-   
+
 
    typedef union packed
                  {
                     ethertype_enum_t arp_ptype_enum; // Same as Ethertype
                     logic [15:0] arp_ptype_raw;
                  }  arp_ptype_t;
-   
+
    typedef enum logic [15:0]
                 {
                  ARP_OPER_RESERVED = 16'h00,
@@ -84,7 +84,7 @@ package ethernet_protocol;
                  ARP_OPER_REQUEST_REVERSE = 16'h03,
                  ARP_OPER_REPLY_REVERSE = 16'h04
                  } arp_oper_enum_t;
-   
+
    typedef union packed
                  {
                     arp_oper_enum_t arp_oper_enum;
@@ -104,7 +104,7 @@ package ethernet_protocol;
                     logic [31:0] pa_raw;
                     arp_ha_octets_t pa_octets;
                  } arp_pa_t;
-   
+
    typedef struct packed
                   {
                      arp_htype_t htype;
@@ -117,8 +117,8 @@ package ethernet_protocol;
                      logic [47:0] tha;
                      arp_pa_t tpa;
                   } arp_header_t; // 26 Octets
-   
-   
+
+
    //-------------------------------------------------------------------------------
    //-- IPv4 header definition
    //-------------------------------------------------------------------------------
@@ -445,10 +445,10 @@ class ARPPacket extends EthernetPacket;
    function shortint get_arp_tpa();
       return(this.arp_header.tpa.pa_raw);
    endfunction : get_arp_tpa
-   
+
 endclass : ARPPacket
-   
-   
+
+
    //
    // Generic IPv4 Packet type.
    // Provides general packet manipulation and low level test functions.
@@ -690,30 +690,34 @@ class UDPPacket extends IPv4Packet;
       axis_bus.write_beat({this.eth_header[31:0],ipv4_header[159:128]},0);
       axis_bus.write_beat(this.ipv4_header[127:64],0);
       axis_bus.write_beat(this.ipv4_header[63:0],0);
-      // If we support UDP with 0 payload length then this next burst needs TLAST support.
-      axis_bus.write_beat(this.udp_header[63:0],0);
-      payload_len = this.udp_header.length - 8;
-      if (use_assertion) begin
-         assert(payload_len==this.get_payload_length());
-      end else begin
-         if (payload_len!=this.get_payload_length())
-         $display("ERROR: UDP payload length missmatch. UDP header: %d,  Allocated %d", payload_len, this.get_payload_length());
-      end
-      this.rewind_payload();
-      // Iterate over whole beats.
-      while (payload_len > 8) begin
-         beat = 64'h0;
-         for (integer i=0; i < 8; i++) begin
-            beat = (beat << 8) | this.get_payload_octet();
+      // UDP packet with 0 sized payload terminates earlier here.
+      if (this.udp_header.length - 8 == 0) begin
+         axis_bus.write_beat(this.udp_header[63:0],1);
+      end else begin // Normal UDP packet with non 0 length payload.
+         axis_bus.write_beat(this.udp_header[63:0],0);
+         payload_len = this.udp_header.length - 8;
+         if (use_assertion) begin
+            assert(payload_len==this.get_payload_length());
+         end else begin
+            if (payload_len!=this.get_payload_length())
+              $display("ERROR: UDP payload length missmatch. UDP header: %d,  Allocated %d", payload_len, this.get_payload_length());
          end
-         axis_bus.write_beat(beat,0);
-         payload_len = payload_len - 8;
-      end
-      beat = 64'h0;
-      for (integer i=0; i < payload_len; i++) begin
-         beat = (beat << 8) | this.get_payload_octet();
-      end
+         this.rewind_payload();
+         // Iterate over whole beats.
+         while (payload_len > 8) begin
+            beat = 64'h0;
+            for (integer i=0; i < 8; i++) begin
+               beat = (beat << 8) | this.get_payload_octet();
+            end
+            axis_bus.write_beat(beat,0);
+            payload_len = payload_len - 8;
+         end
+         beat = 64'h0;
+         for (integer i=0; i < payload_len; i++) begin
+            beat = beat | this.get_payload_octet() << (7-i)*8;
+         end
       axis_bus.write_beat(beat,1);
+      end // else: !if(this.udp_header.length - 8 == 0)
     endtask // send_udp_to_ipv4_stream
 
    // Push entire UDP+IPv4 packet, without Ethernet headers, onto 8bit axis_t bus.
@@ -733,26 +737,38 @@ class UDPPacket extends IPv4Packet;
          axis_bus.write_beat(tmp2,0);
       end
       tmp = this.udp_header[63:0];
-      // Serialize the UDP header to octets
-      for (integer i=56; i >= 0 ; i=i-8) begin
-         tmp2 = (tmp >> i) & 8'hff;
-         axis_bus.write_beat(tmp2,0);
-      end
-      // Serialize payload to octets
-      payload_len = this.udp_header.length - 8;
-      if (use_assertion) begin
-         assert(payload_len==this.get_payload_length());
-      end else begin
-         if (payload_len!=this.get_payload_length())
-         $display("ERROR: UDP payload length missmatch. UDP header: %d,  Allocated %d", payload_len, this.get_payload_length());
-      end
-      this.rewind_payload();
-      // Iterate over payload
-      while (payload_len > 1) begin
-         axis_bus.write_beat(this.get_payload_octet(),0);
-         payload_len--;
-      end
-      axis_bus.write_beat(this.get_payload_octet(),1);
+      if (this.udp_header.length - 8 == 0) begin // Zero length payload special case
+         // Serialize the UDP header to octets
+         for (integer i=56; i >= 0 ; i=i-8) begin
+            tmp2 = (tmp >> i) & 8'hff;
+            if (i == 0)
+              axis_bus.write_beat(tmp2,1); // Set TLAST
+            else
+              axis_bus.write_beat(tmp2,0);
+         end
+      end else begin // Nomral non zero length payload
+         // Serialize the UDP header to octets
+         for (integer i=56; i >= 0 ; i=i-8) begin
+            tmp2 = (tmp >> i) & 8'hff;
+            axis_bus.write_beat(tmp2,0);
+         end
+         // Serialize payload to octets
+         payload_len = this.udp_header.length - 8;
+         if (use_assertion) begin
+            assert(payload_len==this.get_payload_length());
+         end else begin
+            if (payload_len!=this.get_payload_length())
+              $display("ERROR: UDP payload length missmatch. UDP header: %d,  Allocated %d", payload_len, this.get_payload_length());
+         end
+         this.rewind_payload();
+         // Iterate over payload
+         while (payload_len > 1) begin
+            axis_bus.write_beat(this.get_payload_octet(),0);
+            payload_len--;
+         end
+         axis_bus.write_beat(this.get_payload_octet(),1);
+      end // else: !if(this.udp_header.length - 8 == 0)
+
     endtask // send_udp_to_octet_stream
 
 
