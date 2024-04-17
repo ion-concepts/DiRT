@@ -4,6 +4,18 @@
 // Author:  Ian Buckley, Ion Concepts LLC.
 //
 // Description:
+// Takes raw DRaT packets as input.
+// Encapsulates them as Ethernet/IPv4/UDP.
+// Ethernet MAC fields and IPv4 address fields are set from CSR's and global for all packet flows.
+//
+// This module supports 2 methods to map FlowID.DST to UDP Ports.
+// If FlowID.DST[8] is set then csr_udp_dst8 sets the upper 10bits of UDP DST port
+// and flowID.DST[5:0] set the lower 6 bits.
+// If FlowID.DST[8] is clear then flowID.DST[2:0] select from csr_udp_dst[0:7]
+// to fully map FlowID.DST top an arbitrary UDP port.
+//
+// Many header fields are hard coded as local params to sensible value,
+// and UDP checksum generation is dissabled.
 //
 // License: CERN-OHL-P (See LICENSE.md)
 //
@@ -30,6 +42,8 @@ module drat2eth_framer
    input logic [15:0] csr_udp_dst5,
    input logic [15:0] csr_udp_dst6,
    input logic [15:0] csr_udp_dst7,
+   input logic [9:0]  csr_udp_dst8,
+
 
    input logic        csr_enable,
    output logic       csr_idle,
@@ -154,40 +168,42 @@ module drat2eth_framer
 
    // Use 3 LSB's of DRaT Flow_ID to choose from 8 UDP src+dst port tuples (Where src is constant)
    always_comb begin
-      case(drat_header.flow_id[2:0])
-        0: begin
-           udp_src = csr_udp_src;
-           udp_dst = csr_udp_dst0;
-        end
-        1:begin
-           udp_src = csr_udp_src;
-           udp_dst = csr_udp_dst1;
-        end
-        2:begin
-           udp_src = csr_udp_src;
-           udp_dst = csr_udp_dst2;
-        end
-        3:begin
-           udp_src = csr_udp_src;
-           udp_dst = csr_udp_dst3;
-        end
-        4: begin
-           udp_src = csr_udp_src;
-           udp_dst = csr_udp_dst4;
-        end
-        5:begin
-           udp_src = csr_udp_src;
-           udp_dst = csr_udp_dst5;
-        end
-        6:begin
-           udp_src = csr_udp_src;
-           udp_dst = csr_udp_dst6;
-        end
-        7:begin
-           udp_src = csr_udp_src;
-           udp_dst = csr_udp_dst7;
-        end
-      endcase // case (drat_header.flow_id[2:0])
+      // UDP Source is always the same.
+      udp_src = csr_udp_src;
+      // if FlowID.dst[8] is set we use direct DRat->UDP port map mode.
+      if (drat_header.flow_id[8]) begin
+         // Direct Map FlowID.dst[5:0] to UDP Port LSBs.
+         // csr_udp_dst8 sets 10MSB's of UDP port
+         udp_dst = {csr_udp_dst8,drat_header.flow_id[5:0]};
+      end else begin
+         // Map FlowID.dst[2:0] to individual UDP ports from CSR's
+         case(drat_header.flow_id[2:0])
+           0: begin
+              udp_dst = csr_udp_dst0;
+           end
+           1:begin
+              udp_dst = csr_udp_dst1;
+           end
+           2:begin
+              udp_dst = csr_udp_dst2;
+           end
+           3:begin
+              udp_dst = csr_udp_dst3;
+           end
+           4: begin
+              udp_dst = csr_udp_dst4;
+           end
+           5:begin
+              udp_dst = csr_udp_dst5;
+           end
+           6:begin
+              udp_dst = csr_udp_dst6;
+           end
+           7:begin
+              udp_dst = csr_udp_dst7;
+           end
+         endcase // case (drat_header.flow_id[2:0])
+      end
    end // always_comb
 
 
