@@ -171,7 +171,7 @@ module drat2eth_framer
       // UDP Source is always the same.
       udp_src = csr_udp_src;
       // if FlowID.dst[8] is set we use direct DRat->UDP port map mode.
-      if (drat_header.flow_id[8]) begin
+      if (drat_header.flow_id[8] == 1) begin
          // Direct Map FlowID.dst[5:0] to UDP Port LSBs.
          // csr_udp_dst8 sets 10MSB's of UDP port
          udp_dst = {csr_udp_dst8,drat_header.flow_id[5:0]};
