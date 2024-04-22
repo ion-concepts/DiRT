@@ -17,9 +17,8 @@
 module dsp_rx
   #(
     parameter RX_TIME_FIFO_SIZE = 4,  // Default from axis_stream_to_pkt_wrapper
-    parameter RX_SAMPLE_FIFO_SIZE = 13,  // Default from axis_stream_to_pkt_wrapper
-    parameter RX_PACKET_FIFO_SIZE = 8,  // Default from axis_stream_to_pkt_wrapper
-    parameter RX_DATA_FIFO_SIZE = 10,
+    parameter RX_SAMPLE_FIFO_SIZE = 12,  // Default from axis_stream_to_pkt_wrapper
+    parameter RX_PACKET_FIFO_SIZE = 9,  // Default from axis_stream_to_pkt_wrapper
     parameter IQ_WIDTH = 16  // Default from axis_stream_to_pkt_wrapper
     )
    (
@@ -96,17 +95,16 @@ module dsp_rx
       .axis_pkt(axis_rx_packet_pre_fifo)
       );
 
-   axis_fifo_wrapper  #(
-                        .SIZE(RX_DATA_FIFO_SIZE)
-                        )
-   axis_fifo_rx_data_i0 (
-                         .clk(clk),
-                         .rst(rst),
-                         .in_axis(axis_rx_packet_pre_fifo),
-                         .out_axis(axis_rx_packet),
-                         .space(),
-                         .occupied()
-                         );
+   // Breaks all combinatorial timing paths, helps with timing closure.
+   axis_minimal_fifo_wrapper framer_fifo_i0
+     (
+      .clk(clk),
+      .rst(rst),
+      .in_axis(axis_rx_packet_pre_fifo),
+      .out_axis(axis_rx_packet),
+      .space_out(,
+      .occupied_out()
+      );
 
 
     //-------------------------------------------------------------------------------
