@@ -102,7 +102,7 @@ module dsp_rx
       .rst(rst),
       .in_axis(axis_rx_packet_pre_fifo),
       .out_axis(axis_rx_packet),
-      .space_out(,
+	     .space_out(),
       .occupied_out()
       );
 
