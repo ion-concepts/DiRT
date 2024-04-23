@@ -60,7 +60,6 @@ module dsp_rx
    // using DRaT as the encapsulation.
    //
    //-------------------------------------------------------------------------------
-   axis_t #(.WIDTH(64)) axis_rx_packet_pre_fifo(.clk(clk));
   
    axis_stream_to_pkt_backpressured
      #(
@@ -92,20 +91,8 @@ module dsp_rx
       //-------------------------------------------------------------------------------
       // AXIS Output Bus
       //-------------------------------------------------------------------------------
-      .axis_pkt(axis_rx_packet_pre_fifo)
+      .axis_pkt(axis_rx_packet)
       );
-
-   // Breaks all combinatorial timing paths, helps with timing closure.
-   axis_minimal_fifo_wrapper framer_fifo_i0
-     (
-      .clk(clk),
-      .rst(rst),
-      .in_axis(axis_rx_packet_pre_fifo),
-      .out_axis(axis_rx_packet),
-	     .space_out(),
-      .occupied_out()
-      );
-
 
     //-------------------------------------------------------------------------------
    // Debug Only below
