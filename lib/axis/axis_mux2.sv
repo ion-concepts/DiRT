@@ -116,7 +116,10 @@ module axis_mux2
        case (arb_state)
          IDLE :
            if(in0_tvalid)
-             arb_state <= SELECT0;
+             // Go to SELECT0 state unless this is a single-beat packet whose
+             // beat is accepted in this cycle (when state is IDLE,
+             // in0_tready = in_tready).
+             arb_state <= in_tready && in0_tlast ? IDLE : SELECT0;
            else if(in1_tvalid)
              arb_state <= SELECT1;
 
