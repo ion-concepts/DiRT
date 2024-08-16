@@ -4,10 +4,6 @@
 // Description:
 // Verify that:
 // * Any length payload in increments of AXIS_DWIDTH correctly passses through
-// * Reset ordering does not matter
-// * Works with: (SIZE<=5);             //<-- TODO this does not work
-// * Works with: ((SIZE>5)&&(SIZE<=9)); //<-- This works
-// * Works occasionally with: (SIZE>9); //<-- TODO This works up to 31, fails above
 //
 //-------------------------------------------------------------------------------
 
@@ -272,7 +268,7 @@ module axis_deframer_unit_test;
 
       // Generate random payload
       for (int payload_idx=0; payload_idx<$urandom_range(MAX_DATA_BYTES, MIN_DATA_BYTES); payload_idx++) begin
-        axis_payload.push_back($urandom_range(8'hFF, 8'h00));
+        axis_payload.push_back($urandom_range(64'hFFFF_FFFF_FFFF_FFFF, 64'h0));
       end
 
       fork

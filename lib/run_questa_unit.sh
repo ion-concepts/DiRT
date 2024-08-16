@@ -43,6 +43,15 @@ pushd ../../tools/svunit/ # 2>&1 > /dev/null
 source Setup.bsh
 popd # 2>&1 > /dev/null
 
+# Get random seed from UNIX time unless it is defined externall in the RANDSEED
+# variable.
+if [ -z "${RANDSEED}" ] ; then
+    RANDSEED=`date +%s`
+    echo "Using random seed from UNIX time: ${RANDSEED}"
+else
+    echo "Random seed defined externally with RANDSEED env variable: ${RANDSEED}"
+fi
+
 # Run SVUNIT
 echo "runSVUnit"
 # NOTES:
@@ -50,6 +59,6 @@ echo "runSVUnit"
 #    -permit_unmatched_virtual_intf solves a problem with virtual interfaces not matching any real interface
 #
 runSVUnit -s questa --c_arg "-incdir ../../global -incdir ../../axis -incdir ../../ethernet +libext+.sv +libext+.v -y ../../axis -y ../../dsp -y ../../ethernet -y /opt/Xilinx/Vivado/2022.2/data/verilog/src/unisims -sv $VIVADO_PATH/data/verilog/src/unisims/SRLC32E.v" \
-           --r_arg "-permit_unmatched_virtual_intf" -f dependencies.f -o sim $UNIT
+           --r_arg "-permit_unmatched_virtual_intf -sv_seed ${RANDSEED}" -f dependencies.f -o sim $UNIT
 if [ $? -ne 0 ]; then exit 1 ; fi
 popd # 2>&1 > /dev/null
