@@ -15,7 +15,8 @@
 
 module axis_concat_data
     #(
-      parameter unsigned WIDTH=64  // Width of data to concat to AXIS bus
+      parameter unsigned WIDTH=64, // Width of data to concat to AXIS bus
+      parameter unsigned AXIS_DWIDTH=64  // Width of AXIS tdata
       )
     (
      input logic       clk,
@@ -40,7 +41,7 @@ module axis_concat_data
 
 
     always_comb begin
-        out_axis.tdata = {concat_data_in,in_axis.tdata};
+        out_axis.tdata = {concat_data_in[WIDTH-1:0],in_axis.tdata[AXIS_DWIDTH-WIDTH-1:0]};
         out_axis.tvalid = in_axis.tvalid && enable;
         out_axis.tlast = in_axis.tlast;
         in_axis.tready = out_axis.tready && enable;
