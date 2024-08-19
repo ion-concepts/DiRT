@@ -257,7 +257,7 @@ module axis_valve_unit_test;
 
       // Generate random payload
       for (int payload_idx=0; payload_idx<$urandom_range(MAX_DATA_BYTES, MIN_DATA_BYTES); payload_idx++) begin
-        axis_payload.push_back($urandom_range(64'hFFFF_FFFF_FFFF_FFFF, 64'h0));
+        axis_payload.push_back({$urandom_range(32'hFFFF_FFFF, 32'h0),$urandom_range(32'hFFFF_FFFF, 32'h0)});
       end
 
       fork
