@@ -1,31 +1,36 @@
 //-------------------------------------------------------------------------------
-// File:    axis_valve_unit_test.sv
+// File:    axis_pkt_to_mm_unit_test.sv
 //
 // Description:
 // Verify that:
-// *
+// * Any length payload in increments of AXIS_DWIDTH correctly passses through
+// * Reset ordering does not matter
+// * Works with: (SIZE<=5);             //<-- TODO this does not work
+// * Works with: ((SIZE>5)&&(SIZE<=9)); //<-- This works
+// * Works occasionally with: (SIZE>9); //<-- TODO This works up to 31, fails above
+//
 //-------------------------------------------------------------------------------
 
 `include "global_defs.svh"
 `include "svunit_defines.svh"
-`include "axis_valve.sv"
+`include "axis_pkt_to_mm.sv"
 `include "../sim_models/fifo_512x72_2clk.v"
 `include "../sim_models/fifo_generator_vlog_beh.v"
 `include "../sim_models/fifo_generator_v13_2_rfs.v"
 
-module axis_valve_unit_test;
+module axis_pkt_to_mm_unit_test;
   timeunit      1fs;
   timeprecision 1fs;
   import svunit_pkg::svunit_testcase;
 
-  string name = "axis_valve_ut";
+  string name = "axis_pkt_to_mm_ut";
   svunit_testcase svunit_ut;
 
   // --------------------------------------------------------------------------
   // Clocks
   //
   typedef enum {
-     CLK = 0
+     CLK__IN = 0
   } clk_enum_t;
   clk_enum_t clk_enum;
   localparam NUM_CLK = clk_enum.num();
@@ -33,8 +38,7 @@ module axis_valve_unit_test;
   time  clk_period [NUM_CLK-1:0];
   logic rst        [NUM_CLK-1:0];
   initial begin
-    clk_period[CLK] =  $urandom_range(20,1)*1ns; //<-- 50MHz to 1GHz
-    $display("clk_period = %t",clk_period[CLK]);
+    clk_period[CLK__IN] =  $urandom_range(20,1)*1ns; //<-- 50MHz to 1GHz
   end
   generate
     for (genvar i = 0; i<NUM_CLK; i++) begin : gen_clks
@@ -86,32 +90,53 @@ module axis_valve_unit_test;
     end : gen_map_phys_to_virtual
   endgenerate
 
-  assign axis[AXIS__IN].clk = clk[CLK];
-  assign axis[AXIS_OUT].clk = clk[CLK];
+  assign axis[AXIS__IN].clk = clk[CLK__IN];
+  assign axis[AXIS_OUT].clk = clk[CLK__IN];
 
 
   //===================================
   // This is the UUT that we're
   // running the Unit Tests on
   //===================================
-  var logic enable;
+  
+  logic [63:0] axis_AXIS__IN__tdata ; //<-- +1 for tlast
+  logic        axis_AXIS__IN__tvalid;
+  logic        axis_AXIS__IN__tready;
+  logic        axis_AXIS__IN__tlast ;
+  logic [63:0] axis_AXIS_OUT__tdata ; //<-- +1 for tlast
+  logic        axis_AXIS_OUT__tvalid;
+  logic        axis_AXIS_OUT__tready;
+  logic [31:0] status;
 
-  axis_valve 
-  uut_axis_valve (
-    .clk      (clk[CLK]      ), //input  logic
-     .rst     (rst_async     ), //input  logic
-     .in_axis (axis[AXIS__IN]), //axis_t.slave 
-     .out_axis(axis[AXIS_OUT]), //axis_t.master 
-     .enable  (enable        )  //input  logic
-  );
+  always_comb begin // convert from interface to signals to avoid multiple drivers
+    axis_AXIS__IN__tdata [63:0]= axis[AXIS__IN].tdata        ;
+    axis_AXIS__IN__tlast       = axis[AXIS__IN].tlast        ;
+    axis_AXIS__IN__tvalid      = axis[AXIS__IN].tvalid       ;
+    axis[AXIS__IN].tready      = axis_AXIS__IN__tready       ;
 
-  initial begin
-     #($urandom_range(10_000,1)*1ns); //<-- randomize the phase. This can help catch bad synchronizers. //TODO randomize duty cycle and freq drift
-     enable = 0;
-     forever begin
-       #($urandom_range(10_000,1)*1ns) enable = ~enable;
-     end
+    axis[AXIS_OUT].tdata       = axis_AXIS_OUT__tdata  [63:0];
+    axis[AXIS_OUT].tlast       = status[31]                  ;
+    axis[AXIS_OUT].tvalid      = status[30]                  ;
+    axis_AXIS_OUT__tready      = axis[AXIS_OUT].tready       ;
   end
+  axis_pkt_to_mm #(
+    .FIFO_SIZE  (10),
+    .MAX_PACKETS(8)
+  ) uut_axis_pkt_to_mm (
+    .clk        (clk [ CLK__IN]             ), //input  logic 
+    .rst        (rst_async                  ), //input  logic              
+
+    // CSR registers
+    .upper      (axis_AXIS_OUT__tdata[63:32]), //output logic [31:0] 
+    .lower      (axis_AXIS_OUT__tdata[31: 0]), //output logic [31:0] 
+    .lower_pls  (axis_AXIS_OUT__tready      ), //input logic         
+    .status     (status                     ), //output logic [31:0] 
+    // AXIS Input Bus
+    .in_tdata   (axis_AXIS__IN__tdata       ), //input  logic [WIDTH-1:0]  
+    .in_tvalid  (axis_AXIS__IN__tvalid      ), //input  logic              
+    .in_tlast   (axis_AXIS__IN__tlast       ), //input  logic
+    .in_tready  (axis_AXIS__IN__tready      )  //output logic             
+  );
 
   //===================================
   // Build
@@ -130,11 +155,11 @@ module axis_valve_unit_test;
     fork
 
       begin : frk_setup_out
-        repeat(10) @(posedge clk[CLK]);
+        repeat(10) @(posedge clk[CLK__IN]);
       end
 
       begin : frk_setup_in
-        repeat(10) @(posedge clk[CLK]);
+        repeat(10) @(posedge clk[CLK__IN]);
       end
 
     join
@@ -167,7 +192,7 @@ module axis_valve_unit_test;
   //===================================
   `SVUNIT_TESTS_BEGIN
     `SVTEST(incr_data)
-    localparam time timeout  = 5000us;
+    localparam time timeout  = 500us;
     localparam int  NUM_PKTS = 10;
 
     logic [AXIS_DWIDTH-1:0] axis_payload[$];
@@ -185,11 +210,11 @@ module axis_valve_unit_test;
       fork
         // Send Packets From DUT -> TB
         begin : in_to_out_host_thread
-          @(negedge clk[CLK]);
+          @(negedge clk[CLK__IN]);
           send_axis_data_pkt   (.axis_bus_name(AXIS__IN), .axis_payload(axis_payload));
         end
         begin : in_to_out_client_thread
-          @(negedge clk[CLK]);
+          @(negedge clk[CLK__IN]);
           expect_axis_data_pkt (.axis_bus_name(AXIS_OUT), .exp_axis_payload(axis_payload));
           -> iter_done;
         end
@@ -232,7 +257,7 @@ module axis_valve_unit_test;
     #($urandom_range(10_000,1)*1ns) rst_async = 0; //<-- it shouldn't matter which rst[#] this is based on
 
     `SVTEST(rand_data)
-    localparam time timeout  = 5000us;
+    localparam time timeout  = 500us;
     localparam int  NUM_PKTS = 10;
     localparam int  MAX_DATA_BYTES = 10000;
     localparam int  MIN_DATA_BYTES = 1;
@@ -259,11 +284,11 @@ module axis_valve_unit_test;
         begin : frk_random_data
           fork
             begin : in_to_out_host_thread
-              @(negedge clk[CLK]);
+              @(negedge clk[CLK__IN]);
               send_axis_data_pkt  (.axis_bus_name(AXIS__IN), .axis_payload(axis_payload));
             end
             begin : in_to_out_client_thread
-              @(negedge clk[CLK]);
+              @(negedge clk[CLK__IN]);
               expect_axis_data_pkt(.axis_bus_name(AXIS_OUT), .exp_axis_payload(axis_payload));
               -> iter_done;
             end
