@@ -66,9 +66,9 @@ module axis_concat_data_unit_test;
     for (int i = 0; i<NUM_CLK; i++) begin : wait_for_clks
       @(posedge clk[i]);
     end
-    #($urandom_range(10_000,1)*1ns) rst_async = 0; //<-- it shouldn't matter which rst[#] this is based on
-    #($urandom_range(10_000,1)*1ns) rst_async = 1; //<-- it shouldn't matter which rst[#] this is based on
-    #($urandom_range(10_000,1)*1ns) rst_async = 0; //<-- it shouldn't matter which rst[#] this is based on
+    #($urandom_range(10_000,1)*1ns) rst_async = 0;
+    #($urandom_range(10_000,1)*1ns) rst_async = 1;
+    #($urandom_range(10_000,1)*1ns) rst_async = 0;
   end
   
 
@@ -240,9 +240,9 @@ module axis_concat_data_unit_test;
     for (int i = 0; i<NUM_CLK; i++) begin : wait_for_clks
       @(posedge clk[i]);
     end
-    #($urandom_range(10_000,1)*1ns) rst_async = 0; //<-- it shouldn't matter which rst[#] this is based on
-    #($urandom_range(10_000,1)*1ns) rst_async = 1; //<-- it shouldn't matter which rst[#] this is based on
-    #($urandom_range(10_000,1)*1ns) rst_async = 0; //<-- it shouldn't matter which rst[#] this is based on
+    #($urandom_range(10_000,1)*1ns) rst_async = 0; 
+    #($urandom_range(10_000,1)*1ns) rst_async = 1;
+    #($urandom_range(10_000,1)*1ns) rst_async = 0;
 
     `SVTEST(rand_data)
     localparam time timeout  = 5000us;
@@ -328,7 +328,7 @@ module axis_concat_data_unit_test;
     automatic string     axis_msg = "";
     automatic logic [63:0] data;
 
-    // DRaT payload:
+    // AXIS payload:
     foreach (axis_payload[beat]) begin
       tlast = (beat === axis_payload.size-1);
       axis_vif[axis_bus_name].write_beat(axis_payload[beat],tlast);
