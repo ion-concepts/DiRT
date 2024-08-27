@@ -5,9 +5,6 @@
 // Verify that:
 // * Any length payload in increments of AXIS_DWIDTH correctly passses through
 // * Reset ordering does not matter
-// * Works with: (SIZE<=5);             //<-- TODO this does not work
-// * Works with: ((SIZE>5)&&(SIZE<=9)); //<-- This works
-// * Works occasionally with: (SIZE>9); //<-- TODO This works up to 31, fails above
 //
 //-------------------------------------------------------------------------------
 
@@ -65,9 +62,9 @@ module axis_fifo_xilinx_bram_unit_test;
     for (int i = 0; i<NUM_CLK; i++) begin : wait_for_clks
       @(posedge clk[i]);
     end
-    #($urandom_range(10_000,1)*1ns) rst_async = 0; //<-- it shouldn't matter which rst[#] this is based on
-    #($urandom_range(10_000,1)*1ns) rst_async = 1; //<-- it shouldn't matter which rst[#] this is based on
-    #($urandom_range(10_000,1)*1ns) rst_async = 0; //<-- it shouldn't matter which rst[#] this is based on
+    #($urandom_range(10_000,1)*1ns) rst_async = 0;
+    #($urandom_range(10_000,1)*1ns) rst_async = 1;
+    #($urandom_range(10_000,1)*1ns) rst_async = 0;
   end
   
 
@@ -255,9 +252,9 @@ module axis_fifo_xilinx_bram_unit_test;
     for (int i = 0; i<NUM_CLK; i++) begin : wait_for_clks
       @(posedge clk[i]);
     end
-    #($urandom_range(10_000,1)*1ns) rst_async = 0; //<-- it shouldn't matter which rst[#] this is based on
-    #($urandom_range(10_000,1)*1ns) rst_async = 1; //<-- it shouldn't matter which rst[#] this is based on
-    #($urandom_range(10_000,1)*1ns) rst_async = 0; //<-- it shouldn't matter which rst[#] this is based on
+    #($urandom_range(10_000,1)*1ns) rst_async = 0;
+    #($urandom_range(10_000,1)*1ns) rst_async = 1;
+    #($urandom_range(10_000,1)*1ns) rst_async = 0;
 
     `SVTEST(rand_data)
     localparam time timeout  = 500us;
