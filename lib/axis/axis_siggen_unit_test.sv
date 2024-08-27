@@ -3,11 +3,8 @@
 //
 // Description:
 // Verify that:
-// * Any length payload in increments of AXIS_DWIDTH correctly passses through
-// * Reset ordering does not matter
-// * Works with: (SIZE<=5);             //<-- TODO this does not work
-// * Works with: ((SIZE>5)&&(SIZE<=9)); //<-- This works
-// * Works occasionally with: (SIZE>9); //<-- TODO This works up to 31, fails above
+// * Frequency
+// * Phase of I and Q
 //
 //-------------------------------------------------------------------------------
 
