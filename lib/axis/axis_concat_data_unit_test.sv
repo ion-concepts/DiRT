@@ -75,44 +75,41 @@ module axis_concat_data_unit_test;
   // --------------------------------------------------------------------------
   // AXIS Busses
   //
-  localparam AXIS_DWIDTH = 64;
+  localparam AXIS_DWIDTH_IN  = 64;
+  localparam AXIS_DWIDTH_OUT = 96;
+  localparam CONCAT_WIDTH    = AXIS_DWIDTH_OUT-AXIS_DWIDTH_IN;
   localparam NUM_AXIS    = 2;
   typedef enum {
     AXIS__IN = 0, //<-- extra underscore so the print lines up
     AXIS_OUT = 1
   } axis_bus_enum_t;
 
-  axis_t axis [NUM_AXIS-1:0]();
-  virtual axis_t axis_vif[NUM_AXIS-1:0];
+  axis_t #(.WIDTH(AXIS_DWIDTH_IN )) axis_in ();
+  axis_t #(.WIDTH(AXIS_DWIDTH_OUT)) axis_out();
+  virtual axis_t #(.WIDTH(AXIS_DWIDTH_IN )) axis_vif_in;
+  virtual axis_t #(.WIDTH(AXIS_DWIDTH_OUT)) axis_vif_out;
+  initial axis_vif_in  = axis_in;
+  initial axis_vif_out = axis_out;
 
-  generate
-    for (genvar i = 0; i < NUM_AXIS; i++) begin : gen_map_phys_to_virtual
-      initial axis_vif[i] = axis[i];
-    end : gen_map_phys_to_virtual
-  endgenerate
-
-  assign axis[AXIS__IN].clk = clk[CLK];
-  assign axis[AXIS_OUT].clk = clk[CLK];
-
+  assign axis_in.clk  = clk[CLK];
+  assign axis_out.clk = clk[CLK];
 
   //===================================
   // This is the UUT that we're
   // running the Unit Tests on
   //===================================
-  localparam CONCAT_WIDTH = 32;
   var logic enable;
-  var logic [CONCAT_WIDTH-1:0] concat_data = 32'h1234_5678;
+  var logic [CONCAT_WIDTH-1:0] concat_data = 'h1234_5678;
 
   axis_concat_data #(
-    .WIDTH       (CONCAT_WIDTH),
-    .AXIS_DWIDTH (AXIS_DWIDTH )
+    .WIDTH         (CONCAT_WIDTH)
   ) uut_axis_concat_data (
-    .clk           (clk[CLK]      ), //input  logic
-    .rst           (rst_async     ), //input  logic
-    .in_axis       (axis[AXIS__IN]), //axis_t.slave
-    .concat_data_in(concat_data   ),
-    .out_axis      (axis[AXIS_OUT]), //axis_t.master 
-    .enable        (enable        )  //input  logic
+    .clk           (clk[CLK]    ), //input  logic
+    .rst           (rst_async   ), //input  logic
+    .in_axis       (axis_in     ), //axis_t.slave
+    .concat_data_in(concat_data ),
+    .out_axis      (axis_out    ), //axis_t.master 
+    .enable        (enable      )  //input  logic
   );
 
   initial begin
@@ -181,8 +178,8 @@ module axis_concat_data_unit_test;
     localparam time timeout  = 5000us;
     localparam int  NUM_PKTS = 10;
 
-    logic [AXIS_DWIDTH-1:0] axis_payload[$] = {};
-    logic [AXIS_DWIDTH-1:0] exp_axis_payload[$] = {};
+    logic [AXIS_DWIDTH_IN-1:0]  axis_payload    [$] = {};
+    logic [AXIS_DWIDTH_OUT-1:0] exp_axis_payload[$] = {};
     event iter_done;
 
     `INFO("incr_data: send packets with incrementing size");
@@ -190,9 +187,9 @@ module axis_concat_data_unit_test;
     idle_all();
     #50us;
 
-    for (logic [AXIS_DWIDTH-1:0] i=0; i<NUM_PKTS; i++) begin
+    for (logic [AXIS_DWIDTH_IN-1:0] i=0; i<NUM_PKTS; i++) begin
       axis_payload.push_back(i);
-      exp_axis_payload.push_back({concat_data[CONCAT_WIDTH-1:0], i[AXIS_DWIDTH-CONCAT_WIDTH-1:0]});
+      exp_axis_payload.push_back({concat_data[CONCAT_WIDTH-1:0], i[AXIS_DWIDTH_IN-1:0]});
       iter_done = null;
 
       fork
@@ -250,9 +247,9 @@ module axis_concat_data_unit_test;
     localparam int  MAX_DATA_BYTES = 10000;
     localparam int  MIN_DATA_BYTES = 1;
 
-    logic [AXIS_DWIDTH-1:0] temp_payload;
-    logic [AXIS_DWIDTH-1:0] axis_payload[$];
-    logic [AXIS_DWIDTH-1:0] exp_axis_payload[$] = {};
+    logic [AXIS_DWIDTH_IN -1:0] temp_payload;
+    logic [AXIS_DWIDTH_IN -1:0] axis_payload    [$] = {};
+    logic [AXIS_DWIDTH_OUT-1:0] exp_axis_payload[$] = {};
     event                   iter_done;
     int                     rand_case_val;
 
@@ -270,7 +267,7 @@ module axis_concat_data_unit_test;
       for (int payload_idx=0; payload_idx<$urandom_range(MAX_DATA_BYTES, MIN_DATA_BYTES); payload_idx++) begin
         temp_payload = {$urandom_range(32'hFFFF_FFFF, 32'h0),$urandom_range(32'hFFFF_FFFF, 32'h0)};
         axis_payload.push_back(temp_payload);
-        exp_axis_payload.push_back({concat_data[CONCAT_WIDTH-1:0], temp_payload[AXIS_DWIDTH-CONCAT_WIDTH-1:0]});
+        exp_axis_payload.push_back({concat_data[CONCAT_WIDTH-1:0], temp_payload[AXIS_DWIDTH_IN-1:0]});
       end
 
       fork
@@ -315,13 +312,13 @@ module axis_concat_data_unit_test;
   `SVUNIT_TESTS_END
 
   task idle_all();
-    axis[AXIS__IN].idle_master();
-    axis[AXIS_OUT].idle_slave();
+    axis_in.idle_master();
+    axis_out.idle_slave();
   endtask // idle_all
 
   task automatic send_axis_data_pkt (
       input      axis_bus_enum_t            axis_bus_name,
-      input      logic [AXIS_DWIDTH-1:0]    axis_payload [],
+      input      logic [AXIS_DWIDTH_IN-1:0] axis_payload [],
       input      logic                      verbose = 0 
     );
     automatic logic      tlast;
@@ -331,25 +328,25 @@ module axis_concat_data_unit_test;
     // DRaT payload:
     foreach (axis_payload[beat]) begin
       tlast = (beat === axis_payload.size-1);
-      axis_vif[axis_bus_name].write_beat(axis_payload[beat],tlast);
+      axis_vif_in.write_beat(axis_payload[beat],tlast);
     end
 
   endtask
 
   task automatic expect_axis_data_pkt (
       input      axis_bus_enum_t            axis_bus_name,
-      input      logic [AXIS_DWIDTH-1:0]    exp_axis_payload [],
+      input      logic [AXIS_DWIDTH_OUT-1:0]exp_axis_payload [],
       input      logic                      verbose = 0
     );
-    automatic logic [AXIS_DWIDTH-1:0] rec_axis_data;
-    automatic logic                   rec_tlast;
-    automatic logic                   exp_tlast;
-    automatic string                  axis_data_string = "";
+    automatic logic [AXIS_DWIDTH_OUT-1:0] rec_axis_data;
+    automatic logic                       rec_tlast;
+    automatic logic                       exp_tlast;
+    automatic string                      axis_data_string = "";
 
     // RX and compare AXIS Payload
     foreach (exp_axis_payload[beat]) begin
       exp_tlast = (beat === exp_axis_payload.size-1);
-      axis_vif[axis_bus_name].read_beat(rec_axis_data,rec_tlast);
+      axis_vif_out.read_beat(rec_axis_data,rec_tlast);
 
       $swrite(
         axis_data_string,
