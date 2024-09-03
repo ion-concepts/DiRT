@@ -15,7 +15,7 @@
 `define TRUE 1'b1
 
 //==========================================================================
-// Macro's that map standardized System Verilog Interfaces to well named 
+// Macro's that map standardized System Verilog Interfaces to well named
 // buses composed of discrete signals.
 //==========================================================================
 // DRaT AXIS interface
@@ -63,9 +63,11 @@
 .vlog_bus_prefix``_wready  (sv_interface.w_ready),  \
 .vlog_bus_prefix``_wstrb   (sv_interface.w_strb),   \
 .vlog_bus_prefix``_wvalid  (sv_interface.w_valid)
+
 // Pulp AXI4 bus
 // NOTE: Several "exotic" AXI signals omitted to due to lack of applicability.
-`define MAP_AXI(vlog_bus_prefix,sv_interface)     \
+
+`define MAP_AXI_READ(vlog_bus_prefix,sv_interface)  \
 .vlog_bus_prefix``_araddr (sv_interface.ar_addr),  \
 .vlog_bus_prefix``_arburst (sv_interface.ar_burst),\
 .vlog_bus_prefix``_arcache (sv_interface.ar_cache),\
@@ -78,6 +80,14 @@
 .vlog_bus_prefix``_arsize (sv_interface.ar_size),  \
 .vlog_bus_prefix``_aruser (sv_interface.ar_user),  \
 .vlog_bus_prefix``_arvalid (sv_interface.ar_valid),\
+.vlog_bus_prefix``_rdata (sv_interface.r_data),    \
+.vlog_bus_prefix``_rid (sv_interface.r_id),        \
+.vlog_bus_prefix``_rlast (sv_interface.r_last),    \
+.vlog_bus_prefix``_rready (sv_interface.r_ready),  \
+.vlog_bus_prefix``_rresp (sv_interface.r_resp),    \
+.vlog_bus_prefix``_rvalid (sv_interface.r_valid)
+
+`define MAP_AXI_WRITE(vlog_bus_prefix,sv_interface) \
 .vlog_bus_prefix``_awaddr (sv_interface.aw_addr),  \
 .vlog_bus_prefix``_awlen (sv_interface.aw_len),    \
 .vlog_bus_prefix``_awburst (sv_interface.aw_burst),\
@@ -94,18 +104,15 @@
 .vlog_bus_prefix``_bready (sv_interface.b_ready),  \
 .vlog_bus_prefix``_bresp (sv_interface.b_resp),    \
 .vlog_bus_prefix``_bvalid (sv_interface.b_valid),  \
-.vlog_bus_prefix``_rdata (sv_interface.r_data),    \
-.vlog_bus_prefix``_rid (sv_interface.r_id),        \
-.vlog_bus_prefix``_rlast (sv_interface.r_last),    \
-.vlog_bus_prefix``_rready (sv_interface.r_ready),  \
-.vlog_bus_prefix``_rresp (sv_interface.r_resp),    \
-.vlog_bus_prefix``_rvalid (sv_interface.r_valid),  \
 .vlog_bus_prefix``_wdata (sv_interface.w_data),    \
 .vlog_bus_prefix``_wlast (sv_interface.w_last),    \
 .vlog_bus_prefix``_wready (sv_interface.w_ready),  \
 .vlog_bus_prefix``_wstrb (sv_interface.w_strb),    \
 .vlog_bus_prefix``_wvalid (sv_interface.w_valid)
 
+`define MAP_AXI(vlog_bus_prefix,sv_interface)     \
+`MAP_AXI_READ(vlog_bus_prefix,sv_interface),      \
+`MAP_AXI_WRITE(vlog_bus_prefix,sv_interface)
 
 // GMII interface (Discrete signal naming follows Xiinx Vivado BD generated names)
 `define MAP_GMII(gmii_bus_prefix, sv_interface) \
