@@ -21,7 +21,7 @@
 
 interface axis_t
   #(parameter WIDTH = 64)
-   (input clk);
+   (input wire clk);
    // Control flags
    bit                has_checks = 1;
 
@@ -142,7 +142,7 @@ endinterface : axis_t
 
 interface axis_user_t
   #(parameter WIDTH = 64, USER_WIDTH=4)
-   (input clk);
+   (input wire clk);
    // Control flags
    bit                has_checks = 1;
 
@@ -270,7 +270,7 @@ endinterface : axis_user_t
 //---------------------------------------------------------------------------------
 interface axis_slave_t
   #(parameter WIDTH = 64)
-   (input clk);
+   (input wire clk);
    // Control flags
    bit                has_checks = 1;
 
@@ -330,7 +330,7 @@ endinterface : axis_slave_t
 
 interface axis_master_t
   #(parameter WIDTH = 64)
-   (input clk);
+   (input wire clk);
    // Control flags
    bit                has_checks = 1;
 
@@ -383,7 +383,7 @@ endinterface : axis_master_t
 
 interface axis_broadcast_t
   #(parameter WIDTH = 64)
-   (input clk);
+   (input wire clk);
 
    //Actual Signals
    logic [WIDTH-1:0]  tdata;

@@ -859,7 +859,7 @@ endpackage // ethernet_protocol
 //--   flag[3] may be set in lieu of an asserted TLAST or both may be asserted.
 //-- flags are nominally TUSER bits but are concatonated as TDATA[67:64] for ease of use with axis_t
 //-------------------------------------------------------------------------------
-interface eth_stream_t (input clk);
+interface eth_stream_t (input wire clk);
    import ethernet_protocol::*;
    axis_t #(.WIDTH(68)) axis (.clk(clk));
 
