@@ -49,9 +49,13 @@ typedef enum logic [7:0]
    // Integer real numbers in a 12bit (packed) format. Used for example for IQ sample data
    //  INT12_REAL,      
    // Float complex numbers in an IEEE 32bit format. Used for example for IQ sample data
-   FLOAT32_COMPLEX=8'h02, 
+   FLOAT32_COMPLEX=8'h02,
+   // Float complex numbers in an IEEE 32bit format. Marks end of burst.
+   FLOAT32_COMPLEX_EOB=8'h12,
    // Float real numbers in an IEEE 32bit format. Used for example for IQ sample data
-   FLOAT32_REAL=8'h03, 
+   FLOAT32_REAL=8'h03,
+   // Float real numbers in an IEEE 32bit format. Marks end of burst.
+   FLOAT32_REAL_EOB=8'h13,
    // Integer complex numbers in a 16 vectors of 16bit format.
    INT16x16_COMPLEX=8'h08,  
    // Integer complex numbers in a 16 vectors of 16bit format. Marks end of burst.
