@@ -10,16 +10,21 @@
 //
 //-----------------------------------------------------------------------------
 
-module axis_null_src (
-                      axis_t.master out_axis
-                      );
+module axis_null_src
+  #(
+    // Constant TDATA value
+    parameter TDATA_VALUE=0
+    )
+   (
+    axis_t.master out_axis
+    );
 
-    logic out_tready; // Discard
-    //   
-    always_comb begin
-        out_axis.tdata  = 0;
-        out_axis.tvalid = 0;
-        out_axis.tlast  = 0;
-        out_tready      = out_axis.tready;
-    end
+   logic      out_tready; // Discard
+   //
+   always_comb begin
+      out_axis.tdata  = TDATA_VALUE;
+      out_axis.tvalid = 0;
+      out_axis.tlast  = 0;
+      out_tready      = out_axis.tready;
+   end
 endmodule : axis_null_src

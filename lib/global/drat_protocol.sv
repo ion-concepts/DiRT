@@ -23,9 +23,9 @@
 
 package drat_protocol;
    import svunit_pkg::*;
-   
+
 // Make the math trivial to calculate bytes from beats.
-   
+
 // (xsim in 2022.2 does not support 'let')
  let beats_to_bytes(x) = (x)*8;
  let bytes_to_beats(x) = (((x)+7)>>3);
@@ -35,31 +35,27 @@ package drat_protocol;
 typedef enum logic [7:0]
   {
    // Integer complex numbers in a 16bit format.
-   INT16_COMPLEX=8'h00,    
+   INT16_COMPLEX=8'h00,
    // Integer complex numbers in a 16bit format. Marks end of burst.
-   INT16_COMPLEX_EOB=8'h10,  
+   INT16_COMPLEX_EOB=8'h10,
    // Integer complex numbers in a 16bit format. Timestamp unused.
-   INT16_COMPLEX_ASYNC=8'h20,  
+   INT16_COMPLEX_ASYNC=8'h20,
    // Integer complex numbers in a 16bit format. Timestamp unused. Marks end of burst.
    INT16_COMPLEX_ASYNC_EOB=8'h30,
    // Integer real numbers in a 16bit format. Used for example, for real valued sample data.
-   INT16_REAL=8'h01,     
+   INT16_REAL=8'h01,
    // Integer complex numbers in a 12bit (packed) format. Used for example for IQ sample data.
-   //  INT12_COMPLEX,      
+   //  INT12_COMPLEX,
    // Integer real numbers in a 12bit (packed) format. Used for example for IQ sample data
-   //  INT12_REAL,      
+   //  INT12_REAL,
    // Float complex numbers in an IEEE 32bit format. Used for example for IQ sample data
    FLOAT32_COMPLEX=8'h02,
-   // Float complex numbers in an IEEE 32bit format. Marks end of burst.
-   FLOAT32_COMPLEX_EOB=8'h12,
    // Float real numbers in an IEEE 32bit format. Used for example for IQ sample data
    FLOAT32_REAL=8'h03,
-   // Float real numbers in an IEEE 32bit format. Marks end of burst.
-   FLOAT32_REAL_EOB=8'h13,
    // Integer complex numbers in a 16 vectors of 16bit format.
-   INT16x16_COMPLEX=8'h08,  
+   INT16x16_COMPLEX=8'h08,
    // Integer complex numbers in a 16 vectors of 16bit format. Marks end of burst.
-   INT16x16_COMPLEX_EOB=8'h18, 
+   INT16x16_COMPLEX_EOB=8'h18,
    // Integer complex numbers in a 16 vectors of 16bit format. Timestamp unused.
    INT16x16_COMPLEX_ASYNC=8'h28,
    // Integer complex numbers in a 16 vectors of 16bit format. Timestamp unused. Marks end of burst.
@@ -69,26 +65,26 @@ typedef enum logic [7:0]
    // 2bit coded integer in PPRX specific packed format.
    PPRX2_REAL_EOB=8'h19,
    // Create single 32bit memory mapped write transaction (single beat - no burst).
-   WRITE_MM32=8'h80,   
+   WRITE_MM32=8'h80,
    // Create single 32bit memory mapped read transaction (single beat - no burst).
    READ_MM32=8'h81,
    // Response packet for 32bit memory mapped read transaction
-   RESPONSE_MM32=8'h86, 
+   RESPONSE_MM32=8'h86,
    // Create single 16bit memory mapped write transaction (single beat - no burst).
    WRITE_MM16=8'h82,
    // Create single 16bit memory mapped read transaction (single beat - no burst).
    READ_MM16=8'h83,
    // Response packet for 16bit memory mapped read transaction
-   RESPONSE_MM16=8'h87, 
+   RESPONSE_MM16=8'h87,
    // Create single 8bit memory mapped write transaction (single beat - no burst).
-   WRITE_MM8=8'h84,	
+   WRITE_MM8=8'h84,
    // Create single 8bit memory mapped read transaction (single beat - no burst).
-   READ_MM8=8'h85,	  
+   READ_MM8=8'h85,
    // Response packet for 8bit memory mapped read transaction
-   RESPONSE_MM8=8'h88,  
+   RESPONSE_MM8=8'h88,
    // Provides "execution" status for other packets back towards host
    STATUS=8'hC0,
-  
+
    // Provides a report of the current System Time
    TIME_REPORT=8'hC1,
    STRUCTURED=8'hFF
@@ -112,7 +108,7 @@ typedef enum logic [15:0]
               SRC2,
               SRC3
               } node_src_addr_t;
-   
+
 // enumerated addresses of flow src/sinks for test bench readability
 typedef enum logic [15:0]
              {
@@ -146,7 +142,7 @@ typedef struct packed
                   flow_id_t flow_id;
                   logic [63:0] timestamp;
                } pkt_header_t;
-    
+
 // Individual payload beat for INT16_COMPLEX_[EOB|ASYNC|ASYNC_EOB]
 typedef struct packed
                {
@@ -155,6 +151,15 @@ typedef struct packed
                   logic [15:0] i1;
                   logic [15:0] q1;
                } int16_complex_t;
+
+// Individual payload beat for INT16_REAL_*
+typedef struct packed
+               {
+                  logic [15:0] i0;
+                  logic [15:0] i1;
+                  logic [15:0] i2;
+                  logic [15:0] i3;
+               } int16_real_t;
 
 // Payload beat for STATUS packet.
 typedef struct packed
@@ -169,6 +174,7 @@ typedef union packed
               {
                  logic [63:0] beat;
                  int16_complex_t int16_complex;
+		 int16_real_t int16_real;
                  status_beat_t status_beat;
               } payload_beat_t;
 
@@ -220,18 +226,41 @@ endfunction // populate_header_no_timestamp
 //-- returns payload_beat_t
 //-------------------------------------------------------------------------------
 function payload_beat_t populate_int16_complex_beat (input logic [63:0] header_beat);
-    payload_beat_t beat;   
+    payload_beat_t beat;
     beat.int16_complex.i0 = header_beat[63:48];
     beat.int16_complex.q0 = header_beat[47:32];
     beat.int16_complex.i1 = header_beat[31:16];
-    beat.int16_complex.q1 = header_beat[15:0];    
+    beat.int16_complex.q1 = header_beat[15:0];
     return beat;
 endfunction : populate_int16_complex_beat
-    
+
+//-------------------------------------------------------------------------------
+//-- Given a payload beat of an INT16_COMPLEX* packet, populate a payload beat structure
+//-- returns payload_beat_t
+//-------------------------------------------------------------------------------
+function payload_beat_t populate_int16_real_beat (input logic [63:0] header_beat);
+    payload_beat_t beat;
+    beat.int16_real.i0 = header_beat[63:48];
+    beat.int16_real.i1 = header_beat[47:32];
+    beat.int16_real.i2 = header_beat[31:16];
+    beat.int16_real.i3 = header_beat[15:0];
+    return beat;
+endfunction : populate_int16_real_beat
+
 //-------------------------------------------------------------------------------
 //-- Compare two header structures, return 1 if equal, 0 otherwise.
 //-------------------------------------------------------------------------------
 function logic header_compare(input pkt_header_t a, input pkt_header_t b);
+  if (!((a.packet_type === b.packet_type) &&
+        (a.seq_id === b.seq_id) &&
+        (a.length === b.length) &&
+        (a.flow_id === b.flow_id) &&
+        (a.timestamp == b.timestamp))) begin
+     $display("Packet header field missmatch");
+     //print_header(a);
+     //print_header(b);
+  end
+
   return ((a.packet_type === b.packet_type) &&
           (a.seq_id === b.seq_id) &&
           (a.length === b.length) &&
@@ -250,9 +279,11 @@ function logic payload_compare(input pkt_payload_t a, input pkt_payload_t b);
 
     for (integer i = 0; i < a.size(); i++ ) begin
         if (a[i] !== b[i]) begin
-           $display("Payload Beat missmatch: %x vs %x",a[i],b[i]);
+           $display("Payload Beat missmatch: %x vs %x at beat %d",a[i],b[i],i);
            return (0);
-        end
+        end //else begin
+	  //$display("Payload Beat     match: %x vs %x at beat %d",a[i],b[i],i);
+	  // end
     end
     return(1);
 endfunction
@@ -537,17 +568,14 @@ class DRaTPacket;
       `FAIL_UNLESS_EQUAL (tlast, 1);
    endtask : copy_to_pkt
 
-
-    function bit is_same(DRaTPacket test_packet, bit use_assertion=1);
-        //pkt_header_t test_header;
-        //pkt_payload_t test_payload;
-        //test_header = test_packet.get_header();
-        //test_payload
+   function bit is_same(DRaTPacket test_packet, bit use_assertion=1);
         if (use_assertion) begin
            assert(header_compare(this.header,test_packet.get_header()));
            assert(payload_compare(this.payload,test_packet.get_payload()));
            return(1); // Should not get here if assert triggered
         end else begin
+	   //if (!header_compare(this.header,test_packet.get_header())) $display("Header compare failed.");
+	   //if (!payload_compare(this.payload,test_packet.get_payload())) $display("Payload compare failed.");
            return(header_compare(this.header,test_packet.get_header()) &&
                   payload_compare(this.payload,test_packet.get_payload()));
         end
@@ -648,4 +676,3 @@ interface pkt_stream_t (input clk);
 
 endinterface // pkt_stream_t
 `endif //  `ifndef _DRAT_PROTOCOL_SV_
-   
