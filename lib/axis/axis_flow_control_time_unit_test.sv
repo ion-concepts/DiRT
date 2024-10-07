@@ -11,6 +11,7 @@
 `include "global_defs.svh"
 `include "svunit_defines.svh"
 `include "axis_flow_control_time.sv"
+`include "drat_protocol.sv"
 
 module axis_flow_control_time_unit_test;
    import drat_protocol::*;
