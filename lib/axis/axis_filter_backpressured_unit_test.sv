@@ -398,17 +398,7 @@ module axis_filter_backpressured_unit_test;
 	 axis_stimulus_pre.write_beat(64'hffff_ffff_ffff_ffff,1'b1);
          // Let response threads run
          ready_to_test <= 1;
-         //
-         // 1000 clock cycles of 66% duty cycle on AXIS input bus
-         // then go 100% duty cycle
-         //
-         repeat(333) begin
-            enable_stimulus <= 1'b0;
-            @(negedge clk);
-            enable_stimulus <= 1'b1;
-	    @(negedge clk);
-            @(negedge clk);
-         end
+	 enable_stimulus <= 1'b1;
 	 //
          `INFO("filter_data: Stimulus Done");
       end
@@ -583,16 +573,17 @@ module axis_filter_backpressured_unit_test;
          while (!ready_to_test) @(posedge clk);
 
 	 //
-         // 1000 clock cycles of 25% duty cycle on AXIS output bus
-         // then go 100% duty cycle
+         // 1000 clock cycles of 20% duty cycle on AXIS output bus
+         // then go 100% duty cycle to test back pressure operation in the pipeline.
          //
-         repeat(250) begin
+         repeat(200) begin
             enable_response <= 1'b0;
-            @(negedge clk);
-	    @(negedge clk);
-            @(negedge clk);	    
+            @(posedge clk);
+	    @(posedge clk);
+	    @(posedge clk);
+            @(posedge clk);	    
             enable_response <= 1'b1;
-	    @(negedge clk);
+	    @(posedge clk);
          end
  
 	 enable_response <= 1'b1;

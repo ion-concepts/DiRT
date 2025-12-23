@@ -116,7 +116,7 @@ module axis_filter_backpressured
         in_pipe1_axis.tdata <= {WIDTH{1'b0}};
         in_pipe1_axis.tvalid <= 1'b0;
         in_pipe1_axis.tlast <= 1'b0;
-     end else begin
+     end else if (in_axis.tready & in_axis.tvalid) begin
         in_pipe1_axis.tdata <= in_axis.tdata;
         in_pipe1_axis.tvalid <= in_axis.tvalid;
         in_pipe1_axis.tlast <= in_axis.tlast;
@@ -137,7 +137,7 @@ module axis_filter_backpressured
         in_pipe2_axis.tdata <= ({WIDTH{1'b0}});
         in_pipe2_axis.tvalid <= 1'b0;
         in_pipe2_axis.tlast <= 1'b0;
-     end else begin
+     end else if (in_pipe1_axis.tready & in_pipe1_axis.tvalid) begin
         in_pipe2_axis.tdata <= in_pipe1_axis.tdata;
         in_pipe2_axis.tvalid <= in_pipe1_axis.tvalid;
         in_pipe2_axis.tlast <= in_pipe1_axis.tlast;
@@ -266,11 +266,6 @@ module axis_filter_backpressured
       .out_tready(out_tready),
       .space(),
       .occupied());
-
-
-
-
-
 
 
 endmodule // axis_filter
