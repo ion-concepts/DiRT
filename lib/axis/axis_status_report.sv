@@ -73,12 +73,12 @@ module axis_status_report
     // When not enabled, Seq Num will be reset.
     always_ff @(posedge clk)
         if(rst) begin
-            seq_num <= 12'd0;
+            seq_num <= 8'd0;
         end else if ((state == S_IDLE) && ~enable_in) begin
             // Disabling block will reset Seq Num as it goes idle.
-            seq_num <= 12'd0;
+            seq_num <= 8'd0;
         end else if ((state == S_PAYLOAD) && axis_status_out.tready) begin
-            seq_num <= seq_num + 12'd1;
+            seq_num <= seq_num + 8'd1;
         end
 
     always_ff @(posedge clk) begin
@@ -89,22 +89,22 @@ module axis_status_report
                 // Spin in this state until the generation of a packet is triggered.
                 S_IDLE: begin
                     if (generate_pkt_in && enable_in)
-                        state <= S_HEADER;
+                      state <= S_HEADER;
                 end
                 // Generate DRaT STATUS Header beat
                 S_HEADER: begin
                     if (axis_status_out.tready)
-                        state <= S_TIME;
+                      state <= S_TIME;
                 end
                 // Generate DRaT STATUS Timestamp beat
                 S_TIME: begin
                     if (axis_status_out.tready)
-                        state <= S_PAYLOAD;
+                      state <= S_PAYLOAD;
                 end
                 // Generate DRaT STATUS Payload beat
                 S_PAYLOAD: begin
                     if (axis_status_out.tready)
-                        state <= S_IDLE;
+                      state <= S_IDLE;
                 end
             endcase // case (state)
         end // else: !if(rst)

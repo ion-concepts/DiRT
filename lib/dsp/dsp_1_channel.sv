@@ -115,7 +115,6 @@ module dsp_1_channel
        .RX_TIME_FIFO_SIZE(4),  // Default from axis_stream_to_pkt_wrapper
        .RX_SAMPLE_FIFO_SIZE(13),  // Default from axis_stream_to_pkt_wrapper
        .RX_PACKET_FIFO_SIZE(8),  // Default from axis_stream_to_pkt_wrapper
-       .RX_DATA_FIFO_SIZE(10),
        .IQ_WIDTH(16)  // Default from axis_stream_to_pkt_wrapper
        )
    dsp_rx_i0

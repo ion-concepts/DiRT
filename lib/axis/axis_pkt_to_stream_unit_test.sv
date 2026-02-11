@@ -25,6 +25,7 @@
 //-----------------------------------------------------------------------------
 
 `include "svunit_defines.svh"
+`include "drat_protocol.sv"
 `include "axis_pkt_to_stream.sv"
 
 module axis_pkt_to_stream_unit_test;
@@ -43,13 +44,14 @@ module axis_pkt_to_stream_unit_test;
    logic  rst;
    // Watchdog
    int timeout;
-   
+
    // Time
    logic [63:0] current_time;
 
    // DUT Signals (non AXIS)
    logic [31:0] status_flow_id;
    logic [31:0] consumption_flow_id;
+   logic [7:0] consumption_period;
    logic        error_policy_next_packet;
    //logic        run;
    logic        deframer_enable;
@@ -102,8 +104,8 @@ module axis_pkt_to_stream_unit_test;
    // Post Buffer Consumption Bus
    pkt_stream_t axis_consumption_post(.clk(clk));
    // DUT Output bus
-   axis_t #(.WIDTH(32)) axis_response_gated(.clk(clk));
-   // Bus between response vavale and buffer with Time concatenated.
+   axis_t #(.WIDTH(32)) axis_response_concat(.clk(clk));
+   // Bus between response valve and buffer with Time concatenated.
    axis_t #(.WIDTH(96)) axis_response_pre(.clk(clk));
    // Post Buffer Output bus with Time concatenated.
    axis_t #(.WIDTH(96)) axis_response_post(.clk(clk));
@@ -153,6 +155,8 @@ module axis_pkt_to_stream_unit_test;
       .tx_control_enable(tx_control_enable),
       // System time in
       .current_time(current_time),
+      // Interval between consumption packets
+      .consumption_period(consumption_period),
       // FlowID to me used in status packet header
       .status_flow_id(status_flow_id),
       // FlowID to me used in consumption packet header
@@ -168,7 +172,7 @@ module axis_pkt_to_stream_unit_test;
       // Consumption pkt stream out
       .axis_consumption(axis_consumption_pre.axis),
       // Stream oriented raw IQ samples out
-      .axis_stream(axis_response_gated)
+      .axis_stream(axis_response_concat)
       );
 
     //-------------------------------------------------------------------------------
@@ -186,7 +190,9 @@ module axis_pkt_to_stream_unit_test;
                           .clk(clk),
                           .rst(rst),
                           .in_axis(axis_stimulus_pre.axis),
-                          .out_axis(axis_stimulus_post.axis)
+                          .out_axis(axis_stimulus_post.axis),
+			  .space(),
+			  .occupied()
                           );
 
     axis_demux4_wrapper #(
@@ -240,7 +246,9 @@ module axis_pkt_to_stream_unit_test;
                         .clk(clk),
                         .rst(rst),
                         .in_axis(axis_status_pre.axis),
-                        .out_axis(axis_status_post.axis)
+                        .out_axis(axis_status_post.axis),
+			.space(),
+			.occupied()
                         );
 
     //-------------------------------------------------------------------------------
@@ -254,7 +262,9 @@ module axis_pkt_to_stream_unit_test;
                              .clk(clk),
                              .rst(rst),
                              .in_axis(axis_consumption_pre.axis),
-                             .out_axis(axis_consumption_post.axis)
+                             .out_axis(axis_consumption_post.axis),
+			     .space(),
+			     .occupied()
                              );
 
     //-------------------------------------------------------------------------------
@@ -264,7 +274,7 @@ module axis_pkt_to_stream_unit_test;
     axis_valve_response_i (
                            .clk(clk),
                            .rst(rst),
-                           .in_axis(axis_response_gated),
+                           .in_axis(axis_response_concat),
                            .concat_data_in(current_time),
                            .out_axis(axis_response_pre),
                            .enable(enable_response)
@@ -277,7 +287,9 @@ module axis_pkt_to_stream_unit_test;
                           .clk(clk),
                           .rst(rst),
                           .in_axis(axis_response_pre),
-                          .out_axis(axis_response_post)
+                          .out_axis(axis_response_post),
+			  .space(),
+			  .occupied()
                           );
 
     //-------------------------------------------------------------------------------
@@ -291,7 +303,9 @@ module axis_pkt_to_stream_unit_test;
                          .clk(clk),
                          .rst(rst),
                          .in_axis(axis_golden_pre),
-                         .out_axis(axis_golden_post)
+                         .out_axis(axis_golden_post),
+			 .space(),
+			 .occupied()
                          );
 
 
@@ -317,6 +331,7 @@ module axis_pkt_to_stream_unit_test;
       rst <= 1'b1;
       status_flow_id <= {DST0,SRC0};
       consumption_flow_id <= {DST0,SRC0};
+      consumption_period <= 8'd1;
       ready_to_test <= 0;
       clks_per_sample <= 0;
       discard_enable <= 0;
@@ -582,7 +597,7 @@ module axis_pkt_to_stream_unit_test;
          enable_stimulus <= 1'b1;
          //
          `INFO("underflow_one_burst_one_clk_per_samp: Stimulus done");
-      end // block: load_stimulus
+      end // block: load_stimulus2
       //
       begin: read_status2
          // This simulation should produce the following status packets in this order:
@@ -603,7 +618,8 @@ module axis_pkt_to_stream_unit_test;
                                             'd1000,         // TIMESTAMP MIN
                                             'd1200,         // TIMESTAMP MAX
                                             UNDERFLOW,      // STATUS TYPE
-                                            0               // STATUS SEQ NUM
+                                            0,              // STATUS SEQ NUM
+                                            0               // VERBOSE
                                             );
 
          status_packet = new;
@@ -616,7 +632,8 @@ module axis_pkt_to_stream_unit_test;
                                             'd1000,         // TIMESTAMP MIN
                                             'd1200,         // TIMESTAMP MAX
                                             LATE,           // STATUS TYPE
-                                            2               // STATUS SEQ NUM
+                                            2,              // STATUS SEQ NUM
+                                            0               // VERBOSE
                                             );
 
          status_packet = new;
@@ -629,7 +646,8 @@ module axis_pkt_to_stream_unit_test;
                                             'd1000,         // TIMESTAMP MIN
                                             'd1200,         // TIMESTAMP MAX
                                             LATE,           // STATUS TYPE
-                                            3               // STATUS SEQ NUM
+                                            3,              // STATUS SEQ NUM
+                                            0               // VERBOSE
                                             );
 
          status_packet = new;
@@ -642,7 +660,8 @@ module axis_pkt_to_stream_unit_test;
                                             'd1000,         // TIMESTAMP MIN
                                             'd1200,         // TIMESTAMP MAX
                                             LATE,           // STATUS TYPE
-                                            4               // STATUS SEQ NUM
+                                            4,              // STATUS SEQ NUM
+                                            0               // VERBOSE
                                             );
 
 
@@ -657,7 +676,8 @@ module axis_pkt_to_stream_unit_test;
                                             'd1000,         // TIMESTAMP MIN
                                             'd1300,         // TIMESTAMP MAX
                                             EOB_ACK,        // STATUS TYPE
-                                            7               // STATUS SEQ NUM
+                                            7,              // STATUS SEQ NUM
+                                            0               // VERBOSE
                                             );
 
          `INFO("underflow_one_burst_one_clk_per_samp: Good Status");
@@ -678,7 +698,8 @@ module axis_pkt_to_stream_unit_test;
                                                     'd1000,         // TIMESTAMP MIN
                                                     'd1400,         // TIMESTAMP MAX
                                                     ACK,            // STATUS TYPE
-                                                    i               // STATUS SEQ NUM
+                                                    i,              // STATUS SEQ NUM
+                                                    0               // VERBOSE
                                                     );
          end
 
@@ -694,7 +715,7 @@ module axis_pkt_to_stream_unit_test;
          // for the 2nd,3rd,& 4th packets must be purged,
          // as there is no equivalent response data to compare against.
          //
-         response_pkt_count <= 0;
+         response_pkt_count = 0;
          // Wait until stimulus is loaded.
          while (!ready_to_test) @(posedge clk);
          // 100% duty cycle on output bus
@@ -705,15 +726,18 @@ module axis_pkt_to_stream_unit_test;
             axis_golden_post.read_beat(golden_beat,golden_tlast);
             // Grab golden time stamp.
             golden_timestamp = golden_beat[95:32];
-            // Check for asserted tlast and increment calculated Seq Num if so.
-            // (Note: non-blocking increment needed for following code block)
-            if (axis_golden_post.tlast === 1) begin
-               response_pkt_count <= response_pkt_count + 1;
-            end
             // Continue without checking response if we are reading packets with seq nums 1|2|3|4
             // We are discarding Golden packets here that were lost as a result of the underflow.
             if ((response_pkt_count > 0) && (response_pkt_count < 5)) begin
+               // Check for asserted tlast and increment calculated Seq Num if so.
+               if (golden_tlast) begin
+                  response_pkt_count = response_pkt_count + 1;
+               end
                continue;
+            end
+            // Check for asserted tlast and increment calculated Seq Num if so.
+            if (golden_tlast) begin
+               response_pkt_count = response_pkt_count + 1;
             end
             // Pop response.
             axis_response_post.read_beat(response_beat,response_tlast);
@@ -721,12 +745,9 @@ module axis_pkt_to_stream_unit_test;
             response_timestamp = response_beat[95:32];
             // Compare golden time stamp to response timestamp.
             // Drain zero valued fill samples until timestamps match.
- 
+
             while (golden_timestamp > response_timestamp) begin
-               $display("Golden time: %d  Response Time: %d @ time: %d",golden_timestamp , response_timestamp, $time);
-               $display("Response Beat: %x",  response_beat[31:0]);
-               
-               // assert if response TDATA is not 0
+                // assert if response TDATA is not 0
                // IJB Removed this assert because the initial beats of the underflowing packet can get into the response
                //`FAIL_UNLESS_EQUAL(response_beat[31:0],32'd0);
                // Pop response.
@@ -734,8 +755,6 @@ module axis_pkt_to_stream_unit_test;
                // Grab reponse time stamp.
                response_timestamp = response_beat[95:32];
             end // while (golden_timestamp > response_timestamp)
-            $display("timestamps match: %d",golden_timestamp);
-            
             // if golden < response then always assert.
             if (golden_timestamp < response_timestamp) assert(0);
             // If golden == response then assert if golden TDATA != response TDATA
@@ -747,7 +766,7 @@ module axis_pkt_to_stream_unit_test;
          disable watchdog_thread;
       end // block: read_response
       //
-      
+
       begin : watchdog_thread
          timeout = 100000;
          while(1) begin
@@ -908,7 +927,7 @@ module axis_pkt_to_stream_unit_test;
          // for the 3rd packet must be purged,
          // as there is no equivalent response data to compare against.
          //
-         response_pkt_count <= 0;
+         response_pkt_count = 0;
          // Wait until stimulus is loaded.
          while (!ready_to_test) @(posedge clk);
          // 100% duty cycle on output bus
@@ -919,14 +938,17 @@ module axis_pkt_to_stream_unit_test;
             axis_golden_post.read_beat(golden_beat,golden_tlast);
             // Grab golden time stamp.
             golden_timestamp = golden_beat[95:32];
-            // Check for asserted tlast and increment calculated Seq Num if so.
-            // (Note: non-blocking increment needed for following code block)
-            if (axis_golden_post.tlast === 1) begin
-               response_pkt_count <= response_pkt_count + 1;
-            end
             // Break if we are reading packets with seq num 2
             if ((response_pkt_count > 1) && (response_pkt_count < 3)) begin
+	       // Check for asserted tlast and increment calculated Seq Num if so.
+               if (golden_tlast) begin
+		  response_pkt_count = response_pkt_count + 1;
+               end
                continue;
+            end
+	    // Check for asserted tlast and increment calculated Seq Num if so.
+            if (golden_tlast) begin
+	       response_pkt_count = response_pkt_count + 1;
             end
             // Pop response.
             axis_response_post.read_beat(response_beat,response_tlast);
@@ -949,10 +971,10 @@ module axis_pkt_to_stream_unit_test;
             count_resp += 1;
          end // while (axis_golden_post.tvalid)
          `INFO($sformatf("lost_pkt_one_burst_one_clk_per_samp: Good Response, checked %d beats", count_resp));
-
+         disable watchdog_thread;
       end // block: read_response
       //
-      
+
       begin : watchdog_thread
          timeout = 100000;
          while(1) begin
@@ -1124,7 +1146,7 @@ module axis_pkt_to_stream_unit_test;
          disable watchdog_thread;
       end // block: read_response
       //
-      
+
       begin : watchdog_thread
          timeout = 100000;
          while(1) begin
@@ -1133,7 +1155,7 @@ module axis_pkt_to_stream_unit_test;
             @(posedge clk);
          end
       end
-      
+
    join
    @(negedge clk);
    deframer_enable <= 0;
@@ -1343,10 +1365,10 @@ task push_stimulus_beat;
    time_this_sample = time_this_sample  + clks_per_sample;
    // Push beat into golden response FIFO, possibly with TLAST asserted
    axis_golden_pre.write_beat({time_this_sample,beat_in[31:0]},tlast);
+
    // Update dispatch time
    time_this_sample = time_this_sample  + clks_per_sample;
-   $display("push: time: %d",time_this_sample);
-   
+
 endtask
 
 // Fills packet in workspace with random payload and pushes the headers to the FIFO
@@ -1362,6 +1384,7 @@ task populate_packet;
    test_packet.rewind_payload;
    // Push out Header fields to Stimulus FIFO
    axis_stimulus_pre.push_header(test_packet.get_header());
+
 endtask // populate_header
 
 // Create new packet workspace object and initialize headers

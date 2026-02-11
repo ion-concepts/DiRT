@@ -150,8 +150,7 @@ module axis_tx_control
 
     always_ff @(posedge clk) begin
        if (rst) begin
-          generate_consumption_out <= 1'b1;
-          consumed_seq_num_out <= 0;
+          generate_consumption_out <= 1'b0;
           consumption_counter <= 1;
        end else if (consumption_period == 0) begin
           // Do nothing. No consumption packets generated. Also allows S/W reset of count.
@@ -166,7 +165,6 @@ module axis_tx_control
           // then the seq_num is harmlessly updated to effectively update the original consumption report.
           //
           generate_consumption_out <= 1'b1;
-          consumed_seq_num_out <= beat.seq_num;
           consumption_counter <= 1;
        end else if (consumption_inc) begin
           consumption_counter <= consumption_counter + 1;
@@ -188,6 +186,7 @@ module axis_tx_control
             status_payload_out <= 64'h0;
             axis_stream.tvalid <= 1'b0;
             consumption_inc <= 1'b0;
+            consumed_seq_num_out <= 0;
             state <= S_IDLE;
         end else if (~enable_in) begin
             // Transition to S_ERROR immediatly if not enabled and discard input data
@@ -197,6 +196,7 @@ module axis_tx_control
             generate_pkt_out <= 1'b0;
             status_payload_out <= 64'h0;
             consumption_inc <= 1'b0;
+            consumed_seq_num_out <= 0;
         end else begin
             // Defaults
             axis_stream.tvalid <= 1'b1;
@@ -272,11 +272,13 @@ module axis_tx_control
                             status_payload_out <= status_eob_ack;
                             // Increment consumption counter
                             consumption_inc <= 1'b1;
+                            consumed_seq_num_out <= beat.seq_num;
                         end else if (beat.eop && beat.odd) begin
                             // Odd length Packet is ending this cycle, remain in ODD sample state
                             state <= S_ODD;
                             // Increment consumption counter
                             consumption_inc <= 1'b1;
+                            consumed_seq_num_out <= beat.seq_num;
                         end else begin
                             // Nothing special, move on to the even sample
                             state <= S_EVEN;
@@ -301,12 +303,14 @@ module axis_tx_control
                             status_payload_out <= status_eob_ack;
                             // Increment consumption counter
                             consumption_inc <= 1'b1;
+                            consumed_seq_num_out <= beat.seq_num;
                         end else begin
                             // Nothing special, move on to odd sample (FIFO will pop now)
                             state <= S_ODD;
                             if (beat.eop) begin
                                 // Increment consumption counter
                                 consumption_inc <= 1'b1;
+                               consumed_seq_num_out <= beat.seq_num;
                             end
                         end
                     end // if (axis_stream.tready)
@@ -323,6 +327,7 @@ module axis_tx_control
                         //
                         // Increment consumption counter
                         consumption_inc <= 1'b1;
+                        consumed_seq_num_out <= beat.seq_num;
                         // Time to make error policy decisions.
                         if (beat.eob || error_policy_next_packet_in) begin
                             // Policy dictates if we try to restart on a packet or burst boundry.
