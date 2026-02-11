@@ -621,7 +621,6 @@ module axis_pkt_to_stream_unit_test;
                                             0,              // STATUS SEQ NUM
                                             0               // VERBOSE
                                             );
-//       $display("STATUS: Received SeqID:0 UNDERFLOW");
 
          status_packet = new;
          status_packet.copy_to_pkt(axis_status_post);
@@ -636,7 +635,6 @@ module axis_pkt_to_stream_unit_test;
                                             2,              // STATUS SEQ NUM
                                             0               // VERBOSE
                                             );
-//       $display("STATUS: Received SeqID:1 LATE");
 
          status_packet = new;
          status_packet.copy_to_pkt(axis_status_post);
@@ -651,7 +649,6 @@ module axis_pkt_to_stream_unit_test;
                                             3,              // STATUS SEQ NUM
                                             0               // VERBOSE
                                             );
-//       $display("STATUS: Received SeqID:2 LATE");
 
          status_packet = new;
          status_packet.copy_to_pkt(axis_status_post);
@@ -668,7 +665,6 @@ module axis_pkt_to_stream_unit_test;
                                             );
 
 
-//       $display("STATUS: Received SeqID:3 LATE");
 
          status_packet = new;
          status_packet.copy_to_pkt(axis_status_post);
@@ -683,7 +679,6 @@ module axis_pkt_to_stream_unit_test;
                                             7,              // STATUS SEQ NUM
                                             0               // VERBOSE
                                             );
-//       $display("STATUS: Received SeqID:4 EOB_ACK");
 
          `INFO("underflow_one_burst_one_clk_per_samp: Good Status");
       end // block: read_status2
@@ -706,7 +701,6 @@ module axis_pkt_to_stream_unit_test;
                                                     i,              // STATUS SEQ NUM
                                                     0               // VERBOSE
                                                     );
-//          $display("CONSUMPTION: Received SeqID:%d ACK",i);
          end
 
          `INFO("underflow_one_burst_one_clk_per_samp: Good Consumption");
@@ -1362,7 +1356,6 @@ task push_stimulus_beat;
 
    // Get beat from packet work sapce
    beat_in = test_packet.get_beat;
-   //$display("push_stimulus_beat: time: %d, value: %x",time_this_sample,beat_in);
    // Push beat into stimulus FIFO
    axis_stimulus_pre.push_payload(beat_in,tlast);
    // Push beat into golden response FIFO with caclulated dispatch time
@@ -1370,7 +1363,6 @@ task push_stimulus_beat;
    // Update dispatch time
    time_this_sample = time_this_sample  + clks_per_sample;
    // Push beat into golden response FIFO, possibly with TLAST asserted
-   if (tlast) $display("Wrote last beat @ %d",time_this_sample);
    axis_golden_pre.write_beat({time_this_sample,beat_in[31:0]},tlast);
 
    // Update dispatch time
@@ -1391,9 +1383,6 @@ task populate_packet;
    test_packet.rewind_payload;
    // Push out Header fields to Stimulus FIFO
    axis_stimulus_pre.push_header(test_packet.get_header());
-   //
-   $display("Created packet: Type: %22s  SeqID: %3d Length: %5d Timestamp: %d",
-	    test_packet.get_packet_type.name(),test_packet.get_seq_id,test_packet.get_length,test_packet.get_timestamp);
 
 endtask // populate_header
 
