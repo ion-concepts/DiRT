@@ -730,14 +730,12 @@ module axis_pkt_to_stream_unit_test;
             // We are discarding Golden packets here that were lost as a result of the underflow.
             if ((response_pkt_count > 0) && (response_pkt_count < 5)) begin
                // Check for asserted tlast and increment calculated Seq Num if so.
-               // (Note: non-blocking increment needed for following code block)
                if (golden_tlast) begin
                   response_pkt_count = response_pkt_count + 1;
                end
                continue;
             end
             // Check for asserted tlast and increment calculated Seq Num if so.
-            // (Note: non-blocking increment needed for following code block)
             if (golden_tlast) begin
                response_pkt_count = response_pkt_count + 1;
             end
@@ -929,7 +927,7 @@ module axis_pkt_to_stream_unit_test;
          // for the 3rd packet must be purged,
          // as there is no equivalent response data to compare against.
          //
-         response_pkt_count <= 0;
+         response_pkt_count = 0;
          // Wait until stimulus is loaded.
          while (!ready_to_test) @(posedge clk);
          // 100% duty cycle on output bus
@@ -940,14 +938,17 @@ module axis_pkt_to_stream_unit_test;
             axis_golden_post.read_beat(golden_beat,golden_tlast);
             // Grab golden time stamp.
             golden_timestamp = golden_beat[95:32];
-            // Check for asserted tlast and increment calculated Seq Num if so.
-            // (Note: non-blocking increment needed for following code block)
-            if (golden_tlast) begin
-               response_pkt_count <= response_pkt_count + 1;
-            end
             // Break if we are reading packets with seq num 2
             if ((response_pkt_count > 1) && (response_pkt_count < 3)) begin
+	       // Check for asserted tlast and increment calculated Seq Num if so.
+               if (golden_tlast) begin
+		  response_pkt_count = response_pkt_count + 1;
+               end
                continue;
+            end
+	    // Check for asserted tlast and increment calculated Seq Num if so.
+            if (golden_tlast) begin
+	       response_pkt_count = response_pkt_count + 1;
             end
             // Pop response.
             axis_response_post.read_beat(response_beat,response_tlast);
