@@ -110,7 +110,7 @@ Create a single beat memory-mapped read in 32bit (byte) address space. Reads sho
 
 Read RESPONSE_MMxx packets for the various READ_MMxx packet types. SeqID is copied from the original Read request as a transaction ID.
 
-![DRaT - RESPONSE_MMxx](./DRat_RESPONSE_MMxx.svg)
+![DRaT - RESPONSE_MMxx](./DRaT_RESPONSE_MMxx.svg)
 
 ##### STATUS
 
