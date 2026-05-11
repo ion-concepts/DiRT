@@ -119,13 +119,13 @@ interface axis_t
    always_ff @(negedge clk) begin
       assertDataUnknown: assert property (
                                           disable iff(!has_checks)
-                                          ((tvalid===1'b1) |-> $isunknown(tdata)))
+                                          ((tvalid===1'b1) |-> !$isunknown(tdata)))
         else
           $error("ERR_AXIS_DATA_XZ\n tdata went to X or Z during bus beat");
 
       assertLastUnknown: assert property (
                                           disable iff(!has_checks)
-                                          ((tvalid===1'b1) |-> $isunknown(tlast)))
+                                          ((tvalid===1'b1) |-> !$isunknown(tlast)))
         else
           $error("ERR_AXIS_LASTXZ\n tlast went to X or Z during bus beat");
    end // always_ff @ (negedge clk)
@@ -244,19 +244,19 @@ interface axis_user_t
    always_ff @(negedge clk) begin
       assertDataUnknown: assert property (
                                           disable iff(!has_checks)
-                                          ((tvalid===1'b1) |-> $isunknown(tdata)))
+                                          ((tvalid===1'b1) |-> !$isunknown(tdata)))
         else
           $error("ERR_AXIS_DATA_XZ\n tdata went to X or Z during bus beat");
 
       assertUserUnknown: assert property (
                                           disable iff(!has_checks)
-                                          ((tvalid===1'b1) |-> $isunknown(tuser)))
+                                          ((tvalid===1'b1) |-> !$isunknown(tuser)))
         else
-          $error("ERR_AXIS_USER_XZ\n tdata went to X or Z during bus beat");
+          $error("ERR_AXIS_USER_XZ\n tuser went to X or Z during bus beat");
 
       assertLastUnknown: assert property (
                                           disable iff(!has_checks)
-                                          ((tvalid===1'b1) |-> $isunknown(tlast)))
+                                          ((tvalid===1'b1) |-> !$isunknown(tlast)))
         else
           $error("ERR_AXIS_LASTXZ\n tlast went to X or Z during bus beat");
    end // always_ff @ (negedge clk)
